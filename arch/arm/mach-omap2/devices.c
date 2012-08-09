@@ -2243,13 +2243,21 @@ struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs  = 0x50,
 		.sliver_reg_ofs = 0x700,
+#ifdef CONFIG_MACH_TI810XDVR
+        .phy_id     = "0:01", // in baichuan 810X board, emac 0 is used as channel input
+#else
 		.phy_id		= "0:00",
+#endif
 		.dual_emac_reserved_vlan = CPSW_PORT_VLAN_SLAVE_0,
 	},
 	{
 		.slave_reg_ofs  = 0x90,
 		.sliver_reg_ofs = 0x740,
+#ifdef CONFIG_MACH_TI810XDVR
+        .phy_id     = "0:00",
+#else
 		.phy_id		= "0:01",
+#endif
 		.dual_emac_reserved_vlan = CPSW_PORT_VLAN_SLAVE_1,
 	},
 };
@@ -2269,7 +2277,11 @@ static struct cpsw_platform_data ti814x_cpsw_pdata = {
 	.bd_ram_ofs		= 0x2000,
 	.bd_ram_size		= SZ_8K,
 	.rx_descs               = 64,
+#ifdef CONFIG_MACH_TI810XDVR
+    .mac_control            = BIT(5)|BIT(15), /* MIIEN */
+#else
 	.mac_control            = BIT(5), /* MIIEN */
+#endif
 	.gigabit_en		= 1,
 	.host_port_num		= 0,
 	.no_bd_ram		= false,
@@ -2397,8 +2409,13 @@ void ti814x_cpsw_init(void)
 	ti814x_cpsw_mux();
 #endif
 	if (!(cpu_is_ti811x() || cpu_is_dm385() ||
-			(cpu_is_ti814x() && omap_rev() > TI8148_REV_ES1_0)))
+			(cpu_is_ti814x() && omap_rev() > TI8148_REV_ES1_0))) 
 		cpsw_slaves[0].phy_id = "0:01";
+
+#ifdef CONFIG_MACH_TI810XDVR
+        cpsw_slaves[0].phy_id = "0:01";
+        cpsw_slaves[1].phy_id = "0:00";
+#endif 
 
 	if (cpu_is_ti811x()) {
 		cpsw_slaves[0].slave_reg_ofs		= 0x200;
@@ -2809,6 +2826,58 @@ static struct platform_device ti81xx_mcasp_device = {
 	.name = "davinci-mcasp",
 };
 
+#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+static u8 tvp5158_iis_serializer_direction[] = {
+	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+};
+
+static struct snd_platform_data tvp5158_snd_data = {
+	.tx_dma_offset	= 0x46000000,
+	.rx_dma_offset	= 0x46000000,
+	.asp_chan_q	= EVENTQ_2,
+	.tdm_slots	= 16, /* number of channels */
+	.op_mode	= DAVINCI_MCASP_IIS_MODE,
+	.num_serializer = ARRAY_SIZE(tvp5158_iis_serializer_direction),
+	.serial_dir	= tvp5158_iis_serializer_direction,
+	.version	= MCASP_VERSION_2,
+	.txnumevt	= 1,
+	.rxnumevt	= 1,
+};
+
+static struct resource ti81xx_mcasp0_resource[] = {
+	{
+		.name = "mcasp0",
+		.start = TI81XX_ASP0_BASE,
+		.end = TI81XX_ASP0_BASE + (SZ_1K * 12) - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	/* TX event */
+	{
+		.start = TI81XX_DMA_MCASP0_AXEVT,
+		.end = TI81XX_DMA_MCASP0_AXEVT,
+		.flags = IORESOURCE_DMA,
+	},
+	/* RX event */
+	{
+		.start = TI81XX_DMA_MCASP0_AREVT,
+		.end = TI81XX_DMA_MCASP0_AREVT,
+		.flags = IORESOURCE_DMA,
+	},
+};
+
+static struct platform_device ti81xx_mcasp0_device = {
+	.name = "davinci-mcasp", /* driver name */
+	.id = 0,
+	.dev = {
+		.platform_data = &tvp5158_snd_data,
+		},
+	.num_resources = ARRAY_SIZE(ti81xx_mcasp0_resource),
+	.resource = ti81xx_mcasp0_resource,
+};
+#endif
 void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 {
 	if (machine_is_ti8168evm() || machine_is_ti8148evm()
@@ -2829,6 +2898,10 @@ void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 	//omap_mux_init_signal("xref_clk2.mcasp2_ahclkx", 0);
 	ti81xx_mcasp_device.dev.platform_data = pdata;
 	platform_device_register(&ti81xx_mcasp_device);
+
+#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+		platform_device_register(&ti81xx_mcasp0_device);
+#endif
 }
 #endif
 

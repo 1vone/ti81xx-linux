@@ -63,6 +63,10 @@ config  SND_DM6467_SOC_EVM
 	help
 	  Say Y if you want to add support for SoC audio on TI
 
+config SND_SOC_TVP5158_AUDIO
+	tristate "TVP5158 Audio Codec support for DaVinci DM8148 EVM"
+	depends on SND_TI81XX_SOC_EVM && SND_TI81XX_SOC
+
 config SND_DAVINCI_SOC_SFFSDR
 	tristate "SoC Audio support for SFFSDR"
 	depends on SND_DAVINCI_SOC && MACH_SFFSDR
@@ -97,6 +101,7 @@ config  SND_TI81XX_SOC_EVM
 	depends on SND_TI81XX_SOC
 	select SND_DAVINCI_SOC_MCASP
 	select SND_SOC_TLV320AIC3X
+	select SND_SOC_TVP5158_AUDIO
 	help
 	  Say Y if you want to add support for SoC audio on TI
 	  81XX EVM

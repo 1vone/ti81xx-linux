@@ -65,7 +65,7 @@ struct i2c_rdwr_ioctl_data {
 	__u32 nmsgs;			/* number of i2c_msgs */
 };
 
-#define  I2C_RDRW_IOCTL_MAX_MSGS	42
+#define  I2C_RDRW_IOCTL_MAX_MSGS    1024
 
 #ifdef __KERNEL__
 #define I2C_MAJOR	89		/* Device major number		*/

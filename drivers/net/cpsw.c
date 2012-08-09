@@ -948,6 +948,9 @@ static ssize_t cpsw_hw_stats_show(struct device *dev,
 
 DEVICE_ATTR(hw_stats, S_IRUGO, cpsw_hw_stats_show, NULL);
 
+#ifdef CONFIG_MACH_TI810XDVR
+#define PHY_CONFIG_REG  22
+#endif
 static void cpsw_set_phy_config(struct cpsw_priv *priv, struct phy_device *phy)
 {
 	struct cpsw_platform_data *pdata = priv->pdev->dev.platform_data;

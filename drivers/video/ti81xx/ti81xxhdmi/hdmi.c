@@ -1214,6 +1214,7 @@ static int hdmi_power_on(void)
 	else
 		hdmi.cfg.hdmi_dvi = (u16)parsed_edid.is_hdmi_supported;
 	THDMIDBG("Interface is %d [0:DVI, 1:HDMI]\n", hdmi.cfg.hdmi_dvi);
+	printk(" ## Interface is %d [0:DVI, 1:HDMI]\n", hdmi.cfg.hdmi_dvi);
 	/* Start HDMI library */
 	hdmi_lib_enable(&hdmi.cfg);
 

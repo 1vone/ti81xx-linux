@@ -42,61 +42,62 @@
  *  multiproc module state object
  */
 struct multiproc_module_object {
-	struct multiproc_config cfg; /*  Module configuration structure */
-	struct multiproc_config def_cfg; /* Default module configuration */
-	atomic_t ref_count; /* Reference count */
-	u16 id;	/* Local processor ID */
+    struct multiproc_config cfg; /*  Module configuration structure */
+    struct multiproc_config def_cfg; /* Default module configuration */
+    atomic_t ref_count; /* Reference count */
+    u16 id; /* Local processor ID */
 };
 
 static struct multiproc_module_object omap4_multiproc_state = {
-	.def_cfg.num_processors	= 4,
-	.def_cfg.name_list[0][0] = 'T',
-	.def_cfg.name_list[0][1] = 'e',
-	.def_cfg.name_list[0][2] = 's',
-	.def_cfg.name_list[0][3] = 'l',
-	.def_cfg.name_list[0][4] = 'a',
-	.def_cfg.name_list[1][0] = 'A',
-	.def_cfg.name_list[1][1] = 'p',
-	.def_cfg.name_list[1][2] = 'p',
-	.def_cfg.name_list[1][3] = 'M',
-	.def_cfg.name_list[1][4] = '3',
-	.def_cfg.name_list[2][0] = 'S',
-	.def_cfg.name_list[2][1] = 'y',
-	.def_cfg.name_list[2][2] = 's',
-	.def_cfg.name_list[2][3] = 'M',
-	.def_cfg.name_list[2][4] = '3',
-	.def_cfg.name_list[3][0] = 'M',
-	.def_cfg.name_list[3][1] = 'P',
-	.def_cfg.name_list[3][2] = 'U',
-	.def_cfg.id = 3,
-	.id = MULTIPROC_INVALIDID
+    .def_cfg.num_processors = 4,
+    .def_cfg.name_list[0][0] = 'T',
+    .def_cfg.name_list[0][1] = 'e',
+    .def_cfg.name_list[0][2] = 's',
+    .def_cfg.name_list[0][3] = 'l',
+    .def_cfg.name_list[0][4] = 'a',
+    .def_cfg.name_list[1][0] = 'A',
+    .def_cfg.name_list[1][1] = 'p',
+    .def_cfg.name_list[1][2] = 'p',
+    .def_cfg.name_list[1][3] = 'M',
+    .def_cfg.name_list[1][4] = '3',
+    .def_cfg.name_list[2][0] = 'S',
+    .def_cfg.name_list[2][1] = 'y',
+    .def_cfg.name_list[2][2] = 's',
+    .def_cfg.name_list[2][3] = 'M',
+    .def_cfg.name_list[2][4] = '3',
+    .def_cfg.name_list[3][0] = 'M',
+    .def_cfg.name_list[3][1] = 'P',
+    .def_cfg.name_list[3][2] = 'U',
+    .def_cfg.id = 3,
+    .id = MULTIPROC_INVALIDID
 };
 
 static struct multiproc_module_object omap3_multiproc_state = {
-	.def_cfg.num_processors = 2,
-	.def_cfg.name_list[0] = "DSP",
-	.def_cfg.name_list[1] = "HOST",
-	.def_cfg.id = 1,
-	.id = MULTIPROC_INVALIDID
+    .def_cfg.num_processors = 2,
+    .def_cfg.name_list[0] = "DSP",
+    .def_cfg.name_list[1] = "HOST",
+    .def_cfg.id = 1,
+    .id = MULTIPROC_INVALIDID
 };
 
 static struct multiproc_module_object ti81xx_multiproc_state = {
-	.def_cfg.num_processors = 4,
-	.def_cfg.name_list[0] = "DSP",
-	.def_cfg.name_list[1] = "VIDEO-M3",
-	.def_cfg.name_list[2] = "VPSS-M3",
-	.def_cfg.name_list[3] = "HOST",
-	.def_cfg.id = 3,
-	.id = MULTIPROC_INVALIDID
+    .def_cfg.num_processors = 4,
+    .def_cfg.name_list[0] = "DSP",
+    .def_cfg.name_list[1] = "VIDEO-M3",
+    .def_cfg.name_list[2] = "VPSS-M3",
+    .def_cfg.name_list[3] = "HOST",
+    .def_cfg.id = 3,
+    .id = MULTIPROC_INVALIDID
 };
 
 static struct multiproc_module_object ti813x_multiproc_state = {
-	.def_cfg.num_processors = 3,
-	.def_cfg.name_list[0] = "VIDEO-M3",
-	.def_cfg.name_list[1] = "VPSS-M3",
-	.def_cfg.name_list[2] = "HOST",
-	.def_cfg.id = 2,
-	.id = MULTIPROC_INVALIDID
+    .def_cfg.num_processors = 3,
+    .def_cfg.name_list[0] = "DSP",
+    .def_cfg.name_list[1] = "VIDEO-M3",
+    .def_cfg.name_list[2] = "VPSS-M3",
+    .def_cfg.name_list[3] = "HOST",
+    .def_cfg.id = 3,
+    .id = MULTIPROC_INVALIDID
 };
 
 /*
@@ -113,35 +114,35 @@ static struct multiproc_module_object *multiproc_module;
  */
 void multiproc_get_config(struct multiproc_config *cfg)
 {
-	struct multiproc_config *src = NULL;
+    struct multiproc_config *src = NULL;
 
-	BUG_ON(cfg == NULL);
+    BUG_ON(cfg == NULL);
 
-	if (multiproc_module !=	NULL) {
-		if (atomic_cmpmask_and_lt(
-				&(multiproc_module->ref_count),
-				MULTIPROC_MAKE_MAGICSTAMP(0),
-				MULTIPROC_MAKE_MAGICSTAMP(1)) == true) {
-				/* (If setup has not yet been called) */
-			src = &(multiproc_module->def_cfg);
-		} else {
-			src = &(multiproc_module->cfg);
-		}
-	} else {
-		if (cpu_is_omap343x())
-			src = &(omap3_multiproc_state.def_cfg);
-		else if (cpu_is_omap443x())
-			src = &(omap4_multiproc_state.def_cfg);
-		else if (cpu_is_dm385())
-			src = &(ti813x_multiproc_state.def_cfg);
-		else if (cpu_is_ti816x() || cpu_is_ti814x())
-			src = &(ti81xx_multiproc_state.def_cfg);
-		else
-			pr_err("multiproc is not supported on this platform\n");
-	}
+    if (multiproc_module != NULL) {
+        if (atomic_cmpmask_and_lt(
+                &(multiproc_module->ref_count),
+                MULTIPROC_MAKE_MAGICSTAMP(0),
+                MULTIPROC_MAKE_MAGICSTAMP(1)) == true) {
+                /* (If setup has not yet been called) */
+            src = &(multiproc_module->def_cfg);
+        } else {
+            src = &(multiproc_module->cfg);
+        }
+    } else {
+        if (cpu_is_omap343x())
+            src = &(omap3_multiproc_state.def_cfg);
+        else if (cpu_is_omap443x())
+            src = &(omap4_multiproc_state.def_cfg);
+        else if (cpu_is_dm385())
+            src = &(ti813x_multiproc_state.def_cfg);
+        else if (cpu_is_ti816x() || cpu_is_ti814x())
+            src = &(ti81xx_multiproc_state.def_cfg);
+        else
+            pr_err("multiproc is not supported on this platform\n");
+    }
 
-	if  (src != NULL)
-		memcpy(cfg, src, sizeof(struct multiproc_config));
+    if  (src != NULL)
+        memcpy(cfg, src, sizeof(struct multiproc_config));
 }
 EXPORT_SYMBOL(multiproc_get_config);
 
@@ -154,47 +155,47 @@ EXPORT_SYMBOL(multiproc_get_config);
  */
 s32 multiproc_setup(struct multiproc_config *cfg)
 {
-	s32	status = 0;
-	struct multiproc_config tmp_cfg;
+    s32 status = 0;
+    struct multiproc_config tmp_cfg;
 
-	if (multiproc_module == NULL) {
+    if (multiproc_module == NULL) {
 
-		if (cpu_is_omap343x())
-			multiproc_module = &omap3_multiproc_state;
-		else if	(cpu_is_omap443x())
-			multiproc_module = &omap4_multiproc_state;
-		else if (cpu_is_dm385())
-			multiproc_module = &ti813x_multiproc_state;
-		else if (cpu_is_ti816x() || cpu_is_ti814x())
-			multiproc_module = &ti81xx_multiproc_state;
-		else {
-			pr_err("multiproc is not supported on this platform\n");
-			return -EPERM;
-		}
-	}
+        if (cpu_is_omap343x())
+            multiproc_module = &omap3_multiproc_state;
+        else if (cpu_is_omap443x())
+            multiproc_module = &omap4_multiproc_state;
+        else if (cpu_is_dm385())
+            multiproc_module = &ti813x_multiproc_state;
+        else if (cpu_is_ti816x() || cpu_is_ti814x())
+            multiproc_module = &ti81xx_multiproc_state;
+        else {
+            pr_err("multiproc is not supported on this platform\n");
+            return -EPERM;
+        }
+    }
 
-	if (cfg == NULL) {
-		multiproc_get_config(&tmp_cfg);
-		cfg = &tmp_cfg;
-	}
+    if (cfg == NULL) {
+        multiproc_get_config(&tmp_cfg);
+        cfg = &tmp_cfg;
+    }
 
-	/* This	sets the ref_count variable is not initialized,	upper 16 bits is
-	* written with module Id to ensure correctness of ref_count variable.
-	*/
-	atomic_cmpmask_and_set(&multiproc_module->ref_count,
-				MULTIPROC_MAKE_MAGICSTAMP(0),
-				MULTIPROC_MAKE_MAGICSTAMP(0));
+    /* This sets the ref_count variable is not initialized, upper 16 bits is
+    * written with module Id to ensure correctness of ref_count variable.
+    */
+    atomic_cmpmask_and_set(&multiproc_module->ref_count,
+                MULTIPROC_MAKE_MAGICSTAMP(0),
+                MULTIPROC_MAKE_MAGICSTAMP(0));
 
-	if (atomic_inc_return(&multiproc_module->ref_count)
-					!= MULTIPROC_MAKE_MAGICSTAMP(1u)) {
-		status = 1;
-	} else {
-		memcpy(&multiproc_module->cfg, cfg,
-				sizeof(struct multiproc_config));
-		multiproc_module->id = cfg->id;
-	}
+    if (atomic_inc_return(&multiproc_module->ref_count)
+                    != MULTIPROC_MAKE_MAGICSTAMP(1u)) {
+        status = 1;
+    } else {
+        memcpy(&multiproc_module->cfg, cfg,
+                sizeof(struct multiproc_config));
+        multiproc_module->id = cfg->id;
+    }
 
-	return status;
+    return status;
 }
 EXPORT_SYMBOL(multiproc_setup);
 
@@ -208,20 +209,20 @@ EXPORT_SYMBOL(multiproc_setup);
  */
 s32 multiproc_destroy(void)
 {
-	int status = 0;
+    int status = 0;
 
-	if (atomic_cmpmask_and_lt(
-			&(multiproc_module->ref_count),
-			MULTIPROC_MAKE_MAGICSTAMP(0),
-			MULTIPROC_MAKE_MAGICSTAMP(1)) == true) {
-		status = -ENODEV;
-		goto exit;
-	}
+    if (atomic_cmpmask_and_lt(
+            &(multiproc_module->ref_count),
+            MULTIPROC_MAKE_MAGICSTAMP(0),
+            MULTIPROC_MAKE_MAGICSTAMP(1)) == true) {
+        status = -ENODEV;
+        goto exit;
+    }
 
-	atomic_dec_return(&multiproc_module->ref_count);
+    atomic_dec_return(&multiproc_module->ref_count);
 
 exit:
-	return status;
+    return status;
 }
 EXPORT_SYMBOL(multiproc_destroy);
 
@@ -232,25 +233,25 @@ EXPORT_SYMBOL(multiproc_destroy);
  */
 int multiproc_set_local_id(u16 proc_id)
 {
-	int status = 0;
+    int status = 0;
 
-	if (WARN_ON(atomic_cmpmask_and_lt(
-			&(multiproc_module->ref_count),
-			MULTIPROC_MAKE_MAGICSTAMP(0),
-			MULTIPROC_MAKE_MAGICSTAMP(1)) == true)) {
-		status = -ENODEV;
-		goto exit;
-	}
+    if (WARN_ON(atomic_cmpmask_and_lt(
+            &(multiproc_module->ref_count),
+            MULTIPROC_MAKE_MAGICSTAMP(0),
+            MULTIPROC_MAKE_MAGICSTAMP(1)) == true)) {
+        status = -ENODEV;
+        goto exit;
+    }
 
-	if (WARN_ON(proc_id >= MULTIPROC_MAXPROCESSORS)) {
-		status = -EINVAL;
-		goto exit;
-	}
+    if (WARN_ON(proc_id >= MULTIPROC_MAXPROCESSORS)) {
+        status = -EINVAL;
+        goto exit;
+    }
 
-	multiproc_module->cfg.id = proc_id;
+    multiproc_module->cfg.id = proc_id;
 
 exit:
-	return status;
+    return status;
 }
 EXPORT_SYMBOL(multiproc_set_local_id);
 
@@ -261,30 +262,30 @@ EXPORT_SYMBOL(multiproc_set_local_id);
  */
 u16 multiproc_get_id(const char *proc_name)
 {
-	s32 i;
-	u16 proc_id = MULTIPROC_INVALIDID;
+    s32 i;
+    u16 proc_id = MULTIPROC_INVALIDID;
 
-	if (WARN_ON(atomic_cmpmask_and_lt(
-			&(multiproc_module->ref_count),
-			MULTIPROC_MAKE_MAGICSTAMP(0),
-			MULTIPROC_MAKE_MAGICSTAMP(1)) == true))
-		goto exit;
+    if (WARN_ON(atomic_cmpmask_and_lt(
+            &(multiproc_module->ref_count),
+            MULTIPROC_MAKE_MAGICSTAMP(0),
+            MULTIPROC_MAKE_MAGICSTAMP(1)) == true))
+        goto exit;
 
-	/* If the name is NULL, just return the local id */
-	if (proc_name == NULL)
-		proc_id = multiproc_module->cfg.id;
-	else {
-		for (i = 0; i < multiproc_module->cfg.num_processors ; i++) {
-			if (strcmp(proc_name,
-				&multiproc_module->cfg.name_list[i][0]) == 0) {
-				proc_id = i;
-				break;
-			}
-		}
-	}
+    /* If the name is NULL, just return the local id */
+    if (proc_name == NULL)
+        proc_id = multiproc_module->cfg.id;
+    else {
+        for (i = 0; i < multiproc_module->cfg.num_processors ; i++) {
+            if (strcmp(proc_name,
+                &multiproc_module->cfg.name_list[i][0]) == 0) {
+                proc_id = i;
+                break;
+            }
+        }
+    }
 
 exit:
-	return proc_id;
+    return proc_id;
 }
 EXPORT_SYMBOL(multiproc_get_id);
 
@@ -295,22 +296,22 @@ EXPORT_SYMBOL(multiproc_get_id);
  */
 char *multiproc_get_name(u16 proc_id)
 {
-	char *proc_name = NULL;
+    char *proc_name = NULL;
 
-	/* On error condition return NULL pointer, else entry from name list */
-	if (WARN_ON(atomic_cmpmask_and_lt(
-			&(multiproc_module->ref_count),
-			MULTIPROC_MAKE_MAGICSTAMP(0),
-			MULTIPROC_MAKE_MAGICSTAMP(1)) == true))
-		goto exit;
+    /* On error condition return NULL pointer, else entry from name list */
+    if (WARN_ON(atomic_cmpmask_and_lt(
+            &(multiproc_module->ref_count),
+            MULTIPROC_MAKE_MAGICSTAMP(0),
+            MULTIPROC_MAKE_MAGICSTAMP(1)) == true))
+        goto exit;
 
-	if (WARN_ON(proc_id >= MULTIPROC_MAXPROCESSORS))
-		goto exit;
+    if (WARN_ON(proc_id >= MULTIPROC_MAXPROCESSORS))
+        goto exit;
 
-	proc_name = multiproc_module->cfg.name_list[proc_id];
+    proc_name = multiproc_module->cfg.name_list[proc_id];
 
 exit:
-	return proc_name;
+    return proc_name;
 }
 EXPORT_SYMBOL(multiproc_get_name);
 
@@ -321,7 +322,7 @@ EXPORT_SYMBOL(multiproc_get_name);
  */
 u16 multiproc_get_num_processors(void)
 {
-	return multiproc_module->cfg.num_processors;
+    return multiproc_module->cfg.num_processors;
 }
 EXPORT_SYMBOL(multiproc_get_num_processors);
 
@@ -332,7 +333,7 @@ EXPORT_SYMBOL(multiproc_get_num_processors);
  */
 u16 multiproc_self(void)
 {
-	return multiproc_module->id;
+    return multiproc_module->id;
 }
 EXPORT_SYMBOL(multiproc_self);
 
@@ -342,36 +343,36 @@ EXPORT_SYMBOL(multiproc_self);
  */
 u32 multiproc_get_slot(u16 remote_proc_id)
 {
-	u32 slot = 0u;
-	u32 i;
-	u32 j;
-	u32 small_id;
-	u32 large_id;
+    u32 slot = 0u;
+    u32 i;
+    u32 j;
+    u32 small_id;
+    u32 large_id;
 
-	if (WARN_ON(atomic_cmpmask_and_lt(
-			&(multiproc_module->ref_count),
-			MULTIPROC_MAKE_MAGICSTAMP(0),
-			MULTIPROC_MAKE_MAGICSTAMP(1)) == true))
-		goto exit;
+    if (WARN_ON(atomic_cmpmask_and_lt(
+            &(multiproc_module->ref_count),
+            MULTIPROC_MAKE_MAGICSTAMP(0),
+            MULTIPROC_MAKE_MAGICSTAMP(1)) == true))
+        goto exit;
 
-	if (remote_proc_id > multiproc_self()) {
-		small_id = multiproc_self();
-		large_id = remote_proc_id;
-	} else {
-		large_id = multiproc_self();
-		small_id = remote_proc_id;
-	}
+    if (remote_proc_id > multiproc_self()) {
+        small_id = multiproc_self();
+        large_id = remote_proc_id;
+    } else {
+        large_id = multiproc_self();
+        small_id = remote_proc_id;
+    }
 
-	/* determine what offset to create for the remote Proc Id */
-	for (i = 0; i < multiproc_module->cfg.num_processors; i++) {
-		for (j = i + 1; j < multiproc_module->cfg.num_processors; j++) {
-			if ((small_id == i) && (large_id == j))
-				break;
-			slot++;
-		}
-	}
+    /* determine what offset to create for the remote Proc Id */
+    for (i = 0; i < multiproc_module->cfg.num_processors; i++) {
+        for (j = i + 1; j < multiproc_module->cfg.num_processors; j++) {
+            if ((small_id == i) && (large_id == j))
+                break;
+            slot++;
+        }
+    }
 
 exit:
-	return slot;
+    return slot;
 }
 EXPORT_SYMBOL(multiproc_get_slot);

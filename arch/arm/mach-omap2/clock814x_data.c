@@ -4255,7 +4255,7 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"i2c13_ck",			&i2c13_ck,			CK_TI814X | CK_DM385 | CK_TI811X),
 	CLK("omap_i2c.1",	"fck",				&i2c1_fck,			CK_TI814X | CK_DM385 | CK_TI811X),
 	CLK("omap_i2c.2",	"fck",				&i2c2_fck,			CK_TI814X | CK_DM385 | CK_TI811X),
-	CLK(NULL,		"i2c3_fck",			&i2c3_fck,			CK_TI814X | CK_DM385 | CK_TI811X),
+	CLK("omap_i2c.3",	"fck",			    &i2c3_fck,			CK_TI814X | CK_DM385 | CK_TI811X),
 	CLK("omap_i2c.4",	"fck",				&i2c4_fck,			CK_TI814X | CK_DM385 | CK_TI811X),
 	CLK(NULL,		"uart1_fck",			&uart1_fck,			CK_TI814X | CK_DM385 | CK_TI811X),
 	CLK(NULL,		"uart2_fck",			&uart2_fck,			CK_TI814X | CK_DM385 | CK_TI811X),

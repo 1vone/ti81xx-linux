@@ -46,10 +46,17 @@ static char *def_vram;
 /*normal mode*/
 static int fb_mmode = 1;
 
+#define TIED_GRPX_INPUT 1
+
+#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_TI810XEVM)
+#undef TIED_GRPX_INPUT
+#endif
+
 #ifdef DEBUG
 unsigned int fb_debug;
 module_param_named(debug, fb_debug, bool, 0644);
 #endif
+
 
 
 static inline u32 ti81xxfb_get_fb_paddr(struct ti81xxfb_info *tfbi)
@@ -636,6 +643,14 @@ static void set_fb_fix(struct fb_info *fbi)
 	/* init mem*/
 	fbi->screen_base = (char __iomem *) ti81xxfb_get_fb_vaddr(tfbi);
 	fix->line_length = (var->xres_virtual * bpp >> 3);
+	//Added to change line_length
+#ifdef TIED_GRPX_INPUT
+	if(tfbi->idx != 0)
+	{
+        struct fb_var_screeninfo * tmpvar = &((tfbi->fbdev->fbs[0])->var);
+		fix->line_length = (tmpvar->xres_virtual * bpp >> 3);
+	}
+#endif
 	/*pitch should be in 16 byte boundary*/
 	if (fix->line_length & 0xF)
 		fix->line_length += 16 - (fix->line_length & 0xF);
@@ -942,8 +957,20 @@ static int ti81xxfb_open(struct fb_info *fbi, int user)
 
 	}
 
+#ifdef TIED_GRPX_INPUT
+	if(tfbi->idx != 0)
+	{
+		gctrl->set_buffer(gctrl,
+			  ti81xxfb_get_fb_paddr(FB2TFB(tfbi->fbdev->fbs[0])));
+	}
+	else
+	{
+#endif
 	gctrl->set_buffer(gctrl,
 			  ti81xxfb_get_fb_paddr(tfbi));
+#ifdef TIED_GRPX_INPUT
+	}
+#endif
 	r = gctrl->start(gctrl);
 
 	if (r == 0)
@@ -1058,6 +1085,11 @@ static void ti81xxfb_free_fbmem(struct fb_info *fbi)
 	struct ti81xxfb_device		*fbdev = tfbi->fbdev;
 	struct ti81xxfb_mem_region	*rg = &tfbi->mreg;
 
+#ifdef TIED_GRPX_INPUT
+	//Free VRAM
+	if(tfbi->idx == 0)
+	{
+#endif
 	if (rg->paddr) {
 		if (ti81xx_vram_free(rg->paddr,
 				 (void *)rg->vaddr,
@@ -1069,7 +1101,9 @@ static void ti81xxfb_free_fbmem(struct fb_info *fbi)
 	rg->paddr = 0;
 	rg->alloc = 0;
 	rg->size = 0;
-
+#ifdef TIED_GRPX_INPUT
+	}
+#endif
 }
 
 static int ti81xxfb_free_allfbmem(struct ti81xxfb_device *fbdev)
@@ -1103,6 +1137,11 @@ static int ti81xxfb_alloc_fbmem(struct fb_info *fbi, unsigned long size)
 	TFBDBG("allocating %lu bytes for fb %d\n",
 		size, tfbi->idx);
 
+#ifdef TIED_GRPX_INPUT
+//For enabling same buffer across fb0 and fb1
+	if(tfbi->idx == 0)
+	{
+#endif
 	vaddr = (void *)ti81xx_vram_alloc(TI81XXFB_MEMTYPE_SDRAM,
 			(size_t)size, &paddr, NULL);
 
@@ -1127,6 +1166,29 @@ static int ti81xxfb_alloc_fbmem(struct fb_info *fbi, unsigned long size)
 	rg->alloc = 1;
 
 	fbi->screen_size = size;
+#ifdef TIED_GRPX_INPUT
+	}
+	else
+	{
+		struct ti81xxfb_mem_region *rg_tmp = &(FB2TFB(tfbi->fbdev->fbs[0])->mreg);;
+		/*zeroed out memory*/
+		if (tfbi->gctrl->get_resolution(tfbi->gctrl, &w, &h, &sf)) {
+			w = 1920;
+			h = 1080;
+		}
+		bsize = (w * h * 32) >> 3;
+		if (bsize > size)
+			bsize = size;
+
+		rg->paddr = rg_tmp->paddr;
+		rg->vaddr = rg_tmp->vaddr;
+		rg->size = rg_tmp->size;
+		rg->alloc = 1;
+
+		fbi->screen_size = rg_tmp->size;
+
+	}
+#endif
 	return 0;
 }
 
@@ -1668,7 +1730,7 @@ static int __init ti81xxfb_init(void)
 {
 
 	TFBDBG("ti81xxfb_init\n");
-	if (platform_driver_probe(&ti81xxfb_driver, ti81xxfb_probe)) {
+	if (platform_driver_register(&ti81xxfb_driver)) {
 		printk(KERN_ERR "failed to register ti81xxfb driver\n");
 		return -ENODEV;
 	}
