@@ -519,6 +519,10 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		return -EINVAL;
 	}
 
+#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+	dev->codec_fmt = fmt;
+#endif
+
 	return 0;
 }
 
@@ -687,7 +691,20 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
 		else
 			printk(KERN_ERR "capture tdm slot %d not supported\n",
 				dev->tdm_slots);
-
+		
+#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+		switch(dev->codec_fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+		case SND_SOC_DAIFMT_I2S:
+		case SND_SOC_DAIFMT_DSP_A:	
+			/* 1 bit delay */
+			mcasp_set_bits(dev->base + DAVINCI_MCASP_RXFMT_REG, FSRDLY(1));
+			break;
+		default:
+			/* no delay for the reciver */
+			mcasp_set_bits(dev->base + DAVINCI_MCASP_RXFMT_REG, FSRDLY(0));
+			break;
+		}
+#endif
 		mcasp_clr_bits(dev->base + DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
 	}
 }
@@ -847,7 +864,12 @@ static struct snd_soc_dai_driver davinci_mcasp_dai[] = {
 		},
 		.capture 	= {
 			.channels_min 	= 2,
+
+#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+			.channels_max 	= 16,
+#else			 
 			.channels_max 	= 2,
+#endif
 			.rates 		= DAVINCI_MCASP_RATES,
 			.formats	= SNDRV_PCM_FMTBIT_S8 |
 						SNDRV_PCM_FMTBIT_S16_LE |

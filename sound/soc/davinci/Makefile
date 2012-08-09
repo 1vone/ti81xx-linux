@@ -13,7 +13,8 @@ obj-$(CONFIG_SND_DAVINCI_SOC_VCIF) += snd-soc-davinci-vcif.o
 obj-$(CONFIG_SND_SOC_TI81XX_HDMI) += snd-soc-davinci-hdmi.o
 
 # DAVINCI Machine Support
-snd-soc-evm-objs := davinci-evm.o
+# snd-soc-evm-objs := davinci-evm.o
+snd-soc-evm-objs := ti81xx-evm.o
 snd-soc-sffsdr-objs := davinci-sffsdr.o
 
 obj-$(CONFIG_SND_DAVINCI_SOC_EVM) += snd-soc-evm.o

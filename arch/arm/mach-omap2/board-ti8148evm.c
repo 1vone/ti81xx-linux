@@ -582,9 +582,9 @@ static void __init ti814x_evm_i2c_init(void)
 	/* There are 4 instances of I2C in TI814X but currently only one
 	 * instance is being used on the TI8148 EVM
 	 */
-	omap_register_i2c_bus(1, 100, ti814x_i2c_boardinfo,
+	omap_register_i2c_bus(1, 400, ti814x_i2c_boardinfo,
 				ARRAY_SIZE(ti814x_i2c_boardinfo));
-	omap_register_i2c_bus(3, 100, ti814x_i2c_boardinfo1,
+	omap_register_i2c_bus(3, 400, ti814x_i2c_boardinfo1,
 				ARRAY_SIZE(ti814x_i2c_boardinfo1));
 }
 
@@ -666,18 +666,23 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 		.size           = 1 * SZ_128K,
 	},
 	{
-		.name           = "Kernel",
+        .name           = "U-Boot Logo",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x280000 */
+        .size           = 24 * SZ_128K,
+    },	
+	{
+		.name           = "Kernel",
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x580000 */
 		.size           = 34 * SZ_128K,
 	},
 	{
 		.name           = "File System",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x6C0000 */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x9C0000 */
 		.size           = 1601 * SZ_128K,
 	},
 	{
 		.name           = "Reserved",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xCEE0000 */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xD1E0000 */
 		.size           = MTDPART_SIZ_FULL,
 	},
 };
@@ -772,6 +777,7 @@ static struct snd_hdmi_platform_data ti8148_snd_hdmi_pdata = {
 static struct platform_device ti8148_hdmi_audio_device = {
 	.name   = "hdmi-dai",
 	.id     = -1,
+    .num_resources = 0,
 	.dev = {
 		.platform_data = &ti8148_snd_hdmi_pdata,
 	}
@@ -818,6 +824,13 @@ void __init ti8148_hdmi_clk_init(void)
 
 #endif
 
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+static struct platform_device tvp5158_audio_device = {
+	.name	= "tvp5158-audio",
+	.id	= -1,
+};
+#endif
+
 #define LSI_PHY_ID		0x0282F014
 #define LSI_PHY_MASK		0xffffffff
 #define PHY_CONFIG_REG		22
@@ -841,6 +854,11 @@ static void __init ti8148_evm_init(void)
 	omap_serial_init();
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
+
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+	platform_device_register(&tvp5158_audio_device);
+#endif
+
 	ti81xx_register_mcasp(0, &ti8148_evm_snd_data);
 
 	omap2_hsmmc_init(mmc);
@@ -852,6 +870,10 @@ static void __init ti8148_evm_init(void)
 			bw = 2; /*16-bit nand if BTMODE BW pin on board is ON*/
 		else
 			bw = 0; /*8-bit nand if BTMODE BW pin on board is OFF*/
+			
+    #ifdef CONFIG_MACH_TI814XDVR
+        bw = 0; /* use 8-bit always in 814xDVR board */
+    #endif
 
 		board_nand_init(ti814x_nand_partitions,
 			ARRAY_SIZE(ti814x_nand_partitions), 0, bw);

@@ -607,18 +607,23 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 		.size           = 1 * SZ_128K,
 	},
 	{
-		.name           = "Kernel",
+		.name		    = "U-Boot Logo",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x280000 */
+		.size		    = 24 * SZ_128K,
+	},    
+    {
+		.name           = "Kernel",
+        .offset         = MTDPART_OFS_APPEND,   /* Offset = 0x580000 */
 		.size           = 34 * SZ_128K,
 	},
 	{
 		.name           = "File System",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x6C0000 */
+        .offset         = MTDPART_OFS_APPEND,   /* Offset = 0x9C0000 */
 		.size           = 1601 * SZ_128K,
 	},
 	{
 		.name           = "Reserved",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xCEE0000 */
+        .offset         = MTDPART_OFS_APPEND,   /* Offset = 0xD1E0000 */
 		.size           = MTDPART_SIZ_FULL,
 	},
 };
@@ -712,6 +717,7 @@ static struct snd_hdmi_platform_data dm385_snd_hdmi_pdata = {
 static struct platform_device dm385_hdmi_audio_device = {
 	.name   = "hdmi-dai",
 	.id     = -1,
+    .num_resources = 0,
 	.dev = {
 		.platform_data = &dm385_snd_hdmi_pdata,
 	}
@@ -756,6 +762,13 @@ void __init ti813x_hdmi_clk_init(void)
 }
 #endif
 
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+static struct platform_device tvp5158_audio_device = {
+	.name	= "tvp5158-audio",
+	.id	= -1,
+};
+#endif
+
 static void __init dm385_evm_init(void)
 {
 	int bw; /* bus-width */
@@ -764,6 +777,9 @@ static void __init dm385_evm_init(void)
 	omap_serial_init();
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+	platform_device_register(&tvp5158_audio_device);
+#endif
 	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
 
 	omap2_hsmmc_init(mmc);
