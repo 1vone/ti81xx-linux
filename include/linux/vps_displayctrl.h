@@ -105,17 +105,24 @@
 #define IOCTL_VPS_DCTRL_GET_VENC_OUTPUT         (VPS_DCTRL_IOCTL_BASE + 0x4u)
 
 /**
- *  \brief VENC brightness control IOCTL
- *  Note: When setting the brightness, the VENC CSC should be bypassed i.e.
- *        the output from VENC should be in RGB colorspace.
+ *  \brief VENC IOCTL for setting controls like brightness
  *
- *  \param   cmdArgs [IN] Pointer to Vps_DcVencBrightness
+ *  \param   cmdArgs [IN] Pointer to vps_dcvenccontrol
  *
  *  \return  VPS_SOK if successful, else suitable error code
  */
-#define IOCTL_VPS_DCTRL_SET_VENC_BRIGHTNESS                               \
-					(VPS_DCTRL_IOCTL_BASE + 0x5u)
+#define IOCTL_VPS_DCTRL_SET_VENC_CONTROL                                        \
+                                    (VPS_DCTRL_IOCTL_BASE + 0x5u)
 
+/**
+ *  \brief VENC IOCTL for getting current values of current control like brightness
+ *
+ *  \param   cmdArgs [IN] Pointer to vps_dcvenccontrol
+ *
+ *  \return  VPS_SOK if successful, else suitable error code
+ */
+#define IOCTL_VPS_DCTRL_GET_VENC_CONTROL                                        \
+                                    (VPS_DCTRL_IOCTL_BASE + 0x6u)
 
 /** \brief maximum number of basic ioctl commands
  *
@@ -279,13 +286,33 @@ struct vps_dcoutputinfo {
 };
 
 /**
- *  \brief Brightness control IOCTL command arguments.
+ * \brief Enum for control likes brightness, contrast
  */
-struct vps_dcvencbrightness {
-	u32  vencnodenum;
+enum Vps_dcctrl
+{
+	VPS_DC_CTRL_BRIGHTNESS = 0,
+	/**< Brightness control */
+	VPS_DC_CTRL_CONTRAST,
+	/**< Contrast control */
+	VPS_DC_CTRL_SATURATION,
+	/**< Saturation control */
+	VPS_DC_CTRL_HUE,
+	/**< Hue Control */
+	VPS_DC_CTRL_MAX
+	/**< Control Max */
+};
+
+/**
+ *  \brief VENC Control IOCTL command arguments.
+ */
+struct vps_dcvenccontrol {
+	u32  vencid;
 	/**< Node Number of the Venc. */
-	u32  level;
-	/**< Brightness level, varies from -2047 to +2048. */
+	u32 control;
+	/**< Control to be set For the valid values, se #Vps_DcCtrl */
+	s32 level;
+	/**< Brightness level, varies from -128 to +127.
+	  Contrast and Saturation level varies from 0 to 200 */
 };
 
 /**
