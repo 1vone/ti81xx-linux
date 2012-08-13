@@ -117,6 +117,8 @@ struct vps_dispctrl {
 	u32                          sdcsccfg_phy;
 	struct vps_cprocconfig     *cproccfg;
 	u32                        cproccfg_phy;
+        struct vps_dcvenccontrol   *ctrl;
+        u32                        ctrl_phy;
 	/*end of shared structure*/
 	int                        tiedvenc;
 	int                        enabled_venc_ids;

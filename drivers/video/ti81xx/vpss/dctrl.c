@@ -2297,6 +2297,253 @@ static ssize_t blender_edid_show(struct dc_blender_info *binfo, char *buf)
 	return l;
 }
 
+static ssize_t blender_brightness_store(struct dc_blender_info *binfo,
+                                       const char *buf,
+                                       size_t size)
+{
+	int r = 0;
+	int level;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	sscanf(buf, "%d", &level);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_BRIGHTNESS;
+	disp_ctrl->ctrl->level = level;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_SET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (!r)
+		r = size;
+	else
+		VPSSERR("failed to set venc brightness value.\n");
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_brightness_show(struct dc_blender_info *binfo, char *buf)
+{
+	int r = 0;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_BRIGHTNESS;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_GET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (r) {
+		VPSSERR("failed to get venc brightness value.\n");
+		r = 0;
+	} else {
+		r = snprintf(buf, PAGE_SIZE,
+				"%d\n", disp_ctrl->ctrl->level);
+	}
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_contrast_store(struct dc_blender_info *binfo,
+                                       const char *buf,
+                                       size_t size)
+{
+	int r = 0;
+	int level;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	sscanf(buf, "%d", &level);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_CONTRAST;
+	disp_ctrl->ctrl->level = level;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_SET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (!r)
+		r = size;
+	else
+		VPSSERR("failed to set venc brightness value.\n");
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_contrast_show(struct dc_blender_info *binfo, char *buf)
+{
+	int r = 0;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_CONTRAST;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_GET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+	if (r) {
+		VPSSERR("failed to get venc brightness value.\n");
+		r = 0;
+	} else {
+		r = snprintf(buf, PAGE_SIZE,
+				"%d\n", disp_ctrl->ctrl->level);
+	}
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_saturation_store(struct dc_blender_info *binfo,
+                                       const char *buf,
+                                       size_t size)
+{
+	int r = 0;
+	int level;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	sscanf(buf, "%d", &level);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_SATURATION;
+	disp_ctrl->ctrl->level = level;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_SET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (!r)
+		r = size;
+	else
+		VPSSERR("failed to set venc brightness value.\n");
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_saturation_show(struct dc_blender_info *binfo, char *buf)
+{
+	int r = 0;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_SATURATION;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_GET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (r) {
+		VPSSERR("failed to get venc brightness value.\n");
+		r = 0;
+	} else {
+		r = snprintf(buf, PAGE_SIZE,
+				"%d\n", disp_ctrl->ctrl->level);
+	}
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_hue_store(struct dc_blender_info *binfo,
+                                       const char *buf,
+                                       size_t size)
+{
+	int r = 0;
+	int level;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	sscanf(buf, "%d", &level);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_HUE;
+	disp_ctrl->ctrl->level = level;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_SET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (!r)
+		r = size;
+	else
+		VPSSERR("failed to set venc brightness value.\n");
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+static ssize_t blender_hue_show(struct dc_blender_info *binfo, char *buf)
+{
+	int r = 0;
+
+	if ((disp_ctrl == NULL) || (disp_ctrl->fvid2_handle == NULL))
+		return -EINVAL;
+
+	dc_lock(disp_ctrl);
+
+	disp_ctrl->ctrl->vencid = venc_name[binfo->idx].vid;
+	disp_ctrl->ctrl->control = VPS_DC_CTRL_HUE;
+
+	r = vps_fvid2_control(disp_ctrl->fvid2_handle,
+			IOCTL_VPS_DCTRL_GET_VENC_CONTROL,
+			(void *)disp_ctrl->ctrl_phy,
+			NULL);
+
+	if (r) {
+		VPSSERR("failed to get venc brightness value.\n");
+		r = 0;
+	} else {
+		r = snprintf(buf, PAGE_SIZE,
+				"%d\n", disp_ctrl->ctrl->level);
+	}
+
+	dc_unlock(disp_ctrl);
+	return r;
+}
+
+
+
+
+
 struct blender_attribute {
 	struct attribute attr;
 	ssize_t (*show)(struct dc_blender_info *, char *);
@@ -2326,6 +2573,16 @@ static BLENDER_ATTR(source, S_IRUGO | S_IWUSR,
 /* currently EDID read only */
 static BLENDER_ATTR(edid, S_IRUGO,
 		blender_edid_show, NULL);
+static BLENDER_ATTR(brightness, S_IRUGO | S_IWUSR,
+               blender_brightness_show, blender_brightness_store);
+static BLENDER_ATTR(contrast, S_IRUGO | S_IWUSR,
+               blender_contrast_show, blender_contrast_store);
+static BLENDER_ATTR(saturation, S_IRUGO | S_IWUSR,
+               blender_saturation_show, blender_saturation_store);
+static BLENDER_ATTR(hue, S_IRUGO | S_IWUSR,
+               blender_hue_show, blender_hue_store);
+
+
 
 static struct attribute *blender_sysfs_attrs[] = {
 	&blender_attr_mode.attr,
@@ -2337,6 +2594,10 @@ static struct attribute *blender_sysfs_attrs[] = {
 	&blender_attr_name.attr,
 	&blender_attr_edid.attr,
 	&blender_attr_source.attr,
+    &blender_attr_brightness.attr,
+    &blender_attr_contrast.attr,  
+    &blender_attr_saturation.attr,
+    &blender_attr_hue.attr,                                           
 	NULL
 };
 
@@ -2723,6 +2984,7 @@ static inline int get_payload_size(void)
 		size += sizeof(struct vps_cscconfig);  /*vcomp(ti814x only) */
 	else
 		size += sizeof(struct vps_cprocconfig); /*cproc ti816x only*/
+	size += sizeof(struct vps_dcvenccontrol);
 	size += sizeof(struct vps_cscconfig);  /*sd*/
 	size += sizeof(u32);  /*this is for the disable venc command*/
 	/*FIXME add more here*/
@@ -2836,6 +3098,11 @@ static inline void assign_payload_addr(struct vps_dispctrl *dctrl,
 					&offset,
 					&dctrl->sdcsccfg_phy,
 					sizeof(struct vps_cscconfig));
+	dctrl->ctrl = (struct vps_dcvenccontrol *)setaddr(
+			pinfo,
+			&offset,
+			&dctrl->ctrl_phy,
+			sizeof(struct vps_dcvenccontrol));
 	*buf_offset = offset;
 }
 
