@@ -25,7 +25,7 @@
 #ifndef __TI81XXHDMI_H__
 #define __TI81XXHDMI_H__
 
-
+#include <asm/types.h>
 #include <linux/ioctl.h>
 
 /* HDCP state

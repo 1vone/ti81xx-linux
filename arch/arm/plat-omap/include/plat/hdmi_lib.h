@@ -28,9 +28,13 @@
 #define HDMI_CORE_CEC		0x58006D00
 
 #define TI81xx_HDMI_WP		0x46c00000u
-
+#ifdef DEBUG
 #define DBG(format, ...) \
 		printk(KERN_DEBUG "hdmi: " format, ## __VA_ARGS__)
+#else
+#define DBG(format, ...)
+#endif
+
 #define ERR(format, ...) \
 	printk(KERN_ERR "hdmi error: " format, ## __VA_ARGS__)
 

@@ -782,14 +782,12 @@ static inline void assign_payload_addr(struct vps_capt_ctrl *cctrl,
 	for (i = 0; i < VIDEO_MAX_FRAME; i++) {
 		cctrl->framelist[i] = (struct fvid2_framelist *)
 				setaddr(pinfo, buf_offset, &cctrl->frmls_phy[i],
-					((sizeof(struct fvid2_framelist)) *
-					VIDEO_MAX_FRAME));
+					(sizeof(struct fvid2_framelist)));
 	}
 	for (i = 0; i < VIDEO_MAX_FRAME; i++) {
 		cctrl->frames[i] = (struct fvid2_frame *)
 				setaddr(pinfo, buf_offset, &cctrl->frm_phy[i],
-					((sizeof(struct fvid2_frame)) *
-					VIDEO_MAX_FRAME));
+					(sizeof(struct fvid2_frame)));
 	}
 }
 

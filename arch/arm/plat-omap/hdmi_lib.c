@@ -397,7 +397,7 @@ int hdmi_core_ddc_edid(u8 *pEDID, int ext)
 	REG_FLD_MOD(HDMI_CORE_AV, HDMI_CORE_AV_DPD, 0x7, 2, 0);
 
 	/* Wait */
-	mdelay(10);
+	msleep(10);
 	if (!ext) {
 		/* Clk SCL Devices */
 		REG_FLD_MOD(ins, HDMI_CORE_DDC_CMD, 0xA, 3, 0);
@@ -442,7 +442,7 @@ int hdmi_core_ddc_edid(u8 *pEDID, int ext)
 	/* I2C bus slow. So need some additional wait : Varada */
 	for(i=0;i<2;i++){
 	l = hdmi_read_reg(ins, sts);
-	mdelay(102);
+	msleep(102);
 	}
 
 	/* HDMI_CORE_DDC_STATUS__BUS_LOW */
@@ -1097,7 +1097,7 @@ static void hdmi_w1_init(struct hdmi_video_timing *t_p,
 	/* ToDo : revert back to HDMI_PACK_10b_RGB_YUV444,
 	   or put conditional code*/
 	f_p->packingMode = HDMI_PACK_10b_RGB_YUV444;
-	mdelay(340);
+	msleep(340);
 
 	f_p->linePerPanel = 0;
 	f_p->pixelPerLine = 0;
@@ -1491,7 +1491,7 @@ int hdmi_lib_enable(struct hdmi_config *cfg)
 
 	hdmi_w1_irq_enable(&IrqHdmiVectorEnable);
 
-	mdelay(100);
+	msleep(100);
 	IrqHdmiVectorEnable.phyDisconnect = 0;
 	hdmi_w1_irq_wakeup_enable(&IrqHdmiVectorEnable);
 

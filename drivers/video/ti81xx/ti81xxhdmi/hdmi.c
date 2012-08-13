@@ -907,18 +907,20 @@ static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case TI81XXHDMI_READ_EDID:
 		THDMIDBG("ioctl TI81XXHDMI_READ_EDID\n");
+		mutex_lock(&hdmi.lock);                       
 		if (hdmi_get_edid() != 0)
 			return  -EFAULT;
-/*		if (copy_to_user((void __user *)arg, &edid,
-		    sizeof(struct HDMI_EDID)))*/
+
 		/*make sure arg is not NULL*/
-		if (arg)
+		if ((arg) && (!r)) {
 			r = copy_to_user((void __user *)arg, &edid,
 					 sizeof(struct HDMI_EDID));
-		if (r) {
-			THDMIDBG("Error : copy_to_user, r = %d ", r);
-			r = -EFAULT;
-		}
+			if (r) {
+				THDMIDBG("Error : copy_to_user, r = %d ", r);
+				r = -EFAULT;
+			}
+		}             
+		mutex_unlock(&hdmi.lock);
 		break;
 	case TI81XXHDMI_CEC_ACTIVATE:
 		mutex_lock(&hdmi.lock);
@@ -1607,8 +1609,15 @@ static int hdmi_get_panel_edid(char *inbuf, void *data)
 		return -1;
 	hpd_state = hdmi_get_hpd_pin_state();
 
-	if (hdmi_get_edid() != 0)
+	mutex_lock(&hdmi.lock);       
+
+
+	if (hdmi_get_edid() != 0) {
+		mutex_unlock(&hdmi.lock);
 		return -1;
+	}
+
+	mutex_unlock(&hdmi.lock);
 
 	memcpy(inbuf, edid, HDMI_EDID_MAX_LENGTH);
 	return HDMI_EDID_MAX_LENGTH;
