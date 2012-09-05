@@ -3159,10 +3159,10 @@ ident_done:
 		chip->cmdfunc = nand_command_lp;
 
 	/* TODO onfi flash name */
-	printk(KERN_INFO "NAND device: Manufacturer ID:"
-		" 0x%02x, Chip ID: 0x%02x (%s %s)\n", *maf_id, *dev_id,
-		nand_manuf_ids[maf_idx].name,
-	chip->onfi_version ? type->name : chip->onfi_params.model);
+	printk(KERN_INFO "NAND device: Maf ID: 0x%02x, "
+		"Chip ID: 0x%02x (%s, %s)\n erasesize: 0x%x, writesize: %d, oobsize: %d\n", *maf_id, *dev_id,
+		nand_manuf_ids[maf_idx].name, chip->onfi_version ? type->name : chip->onfi_params.model,
+		mtd->erasesize, mtd->writesize, mtd->oobsize);
 
 	return type;
 }
