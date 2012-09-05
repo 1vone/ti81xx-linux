@@ -22,7 +22,7 @@
 #define VPS_SEL_TVP7002_DECODER	0
 #define VPS_SEL_SIL9135_DECODER	1
 
-#ifdef CONFIG_ARCH_TI816X
+#if defined(CONFIG_ARCH_TI816X) && !defined(CONFIG_MACH_UD8168_DVR)
 int pcf8575_ths7360_sd_enable(enum ti81xx_ths_filter_ctrl ctrl);
 int pcf8575_ths7360_hd_enable(enum ti81xx_ths7360_sf_ctrl ctrl);
 int ti816x_pcf8575_init(void);
@@ -46,14 +46,20 @@ static inline int ti816x_pcf8575_exit(void)
 {
 	return 0;
 }
-int vps_ti816x_select_video_decoder(int vid_decoder_id)
+static inline int vps_ti816x_select_video_decoder(int vid_decoder_id)
 {
 	return 0;
 }
-int vps_ti816x_set_tvp7002_filter(enum fvid2_standard standard)
+static inline int vps_ti816x_set_tvp7002_filter(enum fvid2_standard standard)
 {
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_MACH_UD8168_DVR
+int __init eeprom_init(void);
+int get_dvr_hwver(void);
+#endif
+
 #endif
 
