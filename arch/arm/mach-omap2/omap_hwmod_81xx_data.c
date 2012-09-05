@@ -985,6 +985,9 @@ static struct omap_hwmod ti81xx_gpio1_hwmod = {
 	.slaves		= ti81xx_gpio1_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_gpio1_slaves),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_TI81XX),
+	#ifdef CONFIG_MACH_UD8168_DVR
+	.flags		= HWMOD_INIT_NO_RESET,
+	#endif
 };
 
 /* GPIO2 TI81XX*/
@@ -1020,6 +1023,9 @@ static struct omap_hwmod ti81xx_gpio2_hwmod = {
 	.slaves		= ti81xx_gpio2_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_gpio2_slaves),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_TI81XX),
+	#ifdef CONFIG_MACH_UD8168_DVR
+	.flags		= HWMOD_INIT_NO_RESET,
+	#endif
 };
 
 /* GPIO3 TI814X */
@@ -1168,19 +1174,25 @@ static __initdata struct omap_hwmod *ti81xx_hwmods[] = {
 	&ti816x_uart1_hwmod,
 	&ti816x_uart2_hwmod,
 	&ti816x_uart3_hwmod,
+#ifndef CONFIG_MACH_UD8168_DVR
 	&ti814x_uart4_hwmod,
 	&ti814x_uart5_hwmod,
 	&ti814x_uart6_hwmod,
+#endif
 	&ti816x_wd_timer2_hwmod,
+#ifndef CONFIG_MACH_UD8168_DVR
 	&ti814x_wd_timer1_hwmod,
+#endif
 	&ti81xx_i2c1_hwmod,	/* Note: In TI814X this enables I2C0/2 */
 	&ti816x_i2c2_hwmod,
 	&ti814x_i2c3_hwmod,	/* Note: In TI814X this enables I2C1/3 */
 	&ti814x_i2c4_hwmod,	/* Note: In TI814X this enables I2C1/3 */
 	&ti81xx_gpio1_hwmod,
 	&ti81xx_gpio2_hwmod,
+#ifndef CONFIG_MACH_UD8168_DVR
 	&ti814x_gpio3_hwmod,
 	&ti814x_gpio4_hwmod,
+#endif
 	&ti81xx_usbss_hwmod,
 	&ti81xx_elm_hwmod,
 	NULL,
