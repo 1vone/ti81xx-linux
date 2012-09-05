@@ -36,6 +36,9 @@ extern unsigned int vpss_debug;
 #include <plat/ti81xx-vpss.h>
 #include "system.h"
 
+#if 0
+ #define VPSSDBG(x...) printk(" [vpss] " x)
+#else
 #ifdef DEBUG
 #define VPSSDBG(format, ...) \
 	do { \
@@ -47,6 +50,7 @@ extern unsigned int vpss_debug;
 
 #else
 #define VPSSDBG(format, ...)
+#endif	//#ifdef DEBUG
 #endif
 
 #define VPSSERR(format, ...) \

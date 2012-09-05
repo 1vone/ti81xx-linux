@@ -101,6 +101,9 @@ static int vps_probe(struct platform_device *pdev)
 		goto exit4;
 	}
 	vps_sbuf_usage();
+
+	printk("[module] vpss probe done.\n");
+
 	return 0;
 
 exit4:
@@ -133,6 +136,9 @@ static int vps_remove(struct platform_device *pdev)
 	vps_fvid2_deinit(pdev);
 
 	vps_sbuf_deinit(pdev);
+
+	printk("[module] vpss remove done.\n");
+
 	return 0;
 }
 
