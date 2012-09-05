@@ -54,6 +54,9 @@
 #include "hdcp.h"
 #include <linux/edid.h>
 
+#if 0
+ #define THDMIDBG(x...) printk(" [hdmi] " x)
+#else
 #define DEBUG 1 /* FIXME : this should come from menuconfig */
 #ifdef DEBUG
 unsigned int ti81xxhdmi_debug;
@@ -70,6 +73,7 @@ MODULE_PARM_DESC(ti81xxhdmi_debug, "debug on/off");
 	} while (0)
 #else
 #define THDMIDBG(format, ...)
+#endif	//#ifdef DEBUG
 #endif
 
 #define TI81XX_HDMI_DRIVER_NAME	 "TI81XX_HDMI"
@@ -1503,7 +1507,11 @@ int __init hdmi_init(void)
 		 with add proper code once we support all VESA mode*/
 		/* goto err_unregister_panel;*/
 	}
-	if (hdmi.vencinfo.enabled) {
+
+	#if !defined(CONFIG_MACH_UD8168_DVR)
+	if (hdmi.vencinfo.enabled)
+	#endif
+	{
 		r = hdmi_enable_display();
 		if (r) {
 			THDMIDBG("TI81xx_hdmi: Not able to enable HDMI\n");
@@ -1734,7 +1742,10 @@ static int ti81xx_hdmi_probe(struct platform_device *device)
 		THDMIDBG("TI81xx_hdmi: Cound not create device file\n");
 		goto err_remove_class;
 	}
+
+	printk("[module] ti81xx_hdmi probe done.\n");
 	return result;
+
 err_remove_class:
 	class_destroy(ti81xx_hdmi_class);
 
@@ -1743,7 +1754,9 @@ err_remove_class:
 }
 static int ti81xx_hdmi_remove(struct platform_device *device)
 {
-	THDMIDBG("TI81xx_hdmi: remove\n");
+	//THDMIDBG("TI81xx_hdmi: remove\n");
+	printk("[module] ti81xx_hdmi remove done.\n");
+
 	return 0;
 }
 
