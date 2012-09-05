@@ -380,6 +380,11 @@ static char *emac_rxhost_errcodes[16] = {
 #define emac_ctrl_read(reg)	  ioread32((priv->ctrl_base + (reg)))
 #define emac_ctrl_write(reg, val) iowrite32(val, (priv->ctrl_base + (reg)))
 
+#ifdef CONFIG_MACH_UD8168_DVR
+#define TI816X_EMAC1_HW_RAM_ADDR	(0x4A102000)
+extern u8 gpio_eeprom_read(int addr);
+#endif
+
 /**
  * emac_dump_regs: Dump important EMAC registers to debug terminal
  * @priv: The DaVinci EMAC private adapter structure
@@ -1553,7 +1558,15 @@ static void emac_set_phy_config(struct emac_priv *priv, struct phy_device *phy)
 	tmp = miibus->read(miibus, phy_addr, MII_BMSR);
 	if (tmp & 0x1) {
 		val = miibus->read(miibus, phy_addr, MII_CTRL1000);
+
+		#ifdef CONFIG_MACH_UD8168_DVR
+		if (phy->phy_id == 0x001CC914) {
+			/* realtek 8211DG specific: */
+			val &= ~BIT(9);
+		} else
+		#endif
 		val |= BIT(9);
+
 		miibus->write(miibus, phy_addr, MII_CTRL1000, val);
 		tmp = miibus->read(miibus, phy_addr, MII_CTRL1000);
 	}
@@ -1563,6 +1576,13 @@ static void emac_set_phy_config(struct emac_priv *priv, struct phy_device *phy)
 		ADVERTISE_100HALF | ADVERTISE_100FULL);
 	miibus->write(miibus, phy_addr, MII_ADVERTISE, val);
 	tmp = miibus->read(miibus, phy_addr, MII_ADVERTISE);
+
+	#ifdef CONFIG_MACH_UD8168_DVR
+	if (phy->phy_id == 0x001CC914) {
+		/* Restart the PHY */
+		phy_start_aneg(phy);
+	}
+	#endif
 
 	/* TODO : This check is required. This should be
 	 * moved to a board init section as its specific
@@ -1848,6 +1868,9 @@ static int __devinit davinci_emac_probe(struct platform_device *pdev)
 	struct device *emac_dev;
 	struct cpdma_params dma_params;
 
+#ifdef CONFIG_MACH_UD8168_DVR
+	int i, offset;
+#endif
 	/* obtain emac clock from kernel */
 	emac_clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(emac_clk)) {
@@ -1879,6 +1902,17 @@ static int __devinit davinci_emac_probe(struct platform_device *pdev)
 	}
 
 	/* MAC addr and PHY mask , RMII enable info from platform_data */
+
+#ifdef CONFIG_MACH_UD8168_DVR
+	if (pdata->hw_ram_addr == TI816X_EMAC1_HW_RAM_ADDR)
+		offset = 1;
+	else
+		offset = 9;
+
+	for (i = 0; i < 6; i++)
+		pdata->mac_addr[i] = gpio_eeprom_read(i+offset);
+#endif
+
 	memcpy(priv->mac_addr, pdata->mac_addr, 6);
 	priv->phy_id = pdata->phy_id;
 	priv->rmii_en = pdata->rmii_en;
