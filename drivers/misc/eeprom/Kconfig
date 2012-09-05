@@ -70,4 +70,11 @@ config EEPROM_93CX6
 
 	  If unsure, say N.
 
+config EEPROM_3WIRED_AT93C66
+	tristate "3-wired EEPROM 93C66 support"
+	help
+	  This is a driver for the EEPROM chipset 93c66
+	  used 3-wired(gpio) interface.
+	  The driver supports read command only.
+
 endmenu
