@@ -210,6 +210,13 @@ config REGULATOR_TPS65023
 	  three step-down converters and two general-purpose LDO voltage regulators.
 	  It supports TI's software based Class-2 SmartReflex implementation.
 
+config REGULATOR_TPS40400
+	tristate "TI TPS40400 PMBus PMIC"
+	depends on I2C
+	help
+	  This driver supports TPS40400 voltage regulator chips.
+	  It supports TI's software based Class-2 SmartReflex implementation.
+
 config REGULATOR_GPIO
 	tristate "GPIO voltage regulator"
 	depends on ARCH_TI816X && GPIOLIB
