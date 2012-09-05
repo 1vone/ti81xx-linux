@@ -359,6 +359,11 @@ config MACH_TI8168EVM
 	default y
 	depends on ARCH_TI816X
 
+config MACH_UD8168_DVR
+	bool "UD8168 DVR Module"
+	default n
+	depends on ARCH_TI816X
+
 config OMAP3_EMU
 	bool "OMAP3 debugging peripherals"
 	depends on ARCH_OMAP3
