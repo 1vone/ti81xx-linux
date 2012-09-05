@@ -14,6 +14,26 @@
 
 static struct snd_soc_codec_driver soc_codec_tvp5158;
 
+#ifdef CONFIG_SND_UD8168_SOC_DVR
+/* null function */
+static int tvp5158_set_dai_sysclk(struct snd_soc_dai *codec_dai,
+				int clk_id, unsigned int freq, int dir)
+{
+	return 0;
+}
+
+static int tvp5158_set_dai_fmt(struct snd_soc_dai *codec_dai,
+			     unsigned int fmt)
+{
+	return 0;
+}
+
+static struct snd_soc_dai_ops tvp5158_dai_ops = {
+	.set_sysclk	= tvp5158_set_dai_sysclk,
+	.set_fmt	= tvp5158_set_dai_fmt,
+};
+#endif
+
 static struct snd_soc_dai_driver tvp5158_dai = {
 	.name = "tvp5158-hifi",
 	.capture = {
@@ -22,6 +42,10 @@ static struct snd_soc_dai_driver tvp5158_dai = {
 		.channels_max = 16,
 		.rates = (SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_16000),	
 		.formats = SNDRV_PCM_FMTBIT_S16_LE,},
+		#ifdef CONFIG_SND_UD8168_SOC_DVR
+		.ops = &tvp5158_dai_ops,
+		#endif
+
 };
 
 static int tvp5158_audio_codec_probe(struct platform_device *pdev)
