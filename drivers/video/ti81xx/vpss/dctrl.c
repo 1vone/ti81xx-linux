@@ -3117,8 +3117,10 @@ int __init vps_dc_init(struct platform_device *pdev,
 
 	VPSSDBG("dctrl init\n");
 
+	#ifndef CONFIG_MACH_UD8168_DVR
 	if ((!def_i2cmode) && (v_pdata->pcf_ths_init))
 		v_pdata->pcf_ths_init();
+	#endif
 
 	dc_payload_info = kzalloc(sizeof(struct vps_payload_info),
 				  GFP_KERNEL);
@@ -3282,7 +3284,7 @@ int __init vps_dc_init(struct platform_device *pdev,
 		case HDCOMP:
 			opinfo.vencnodenum = VPS_DC_VENC_HDCOMP;
 			opinfo.afmt = VPS_DC_A_OUTPUT_COMPONENT;
-#if defined(CONFIG_MACH_TI8168_DVR) || defined(CONFIG_MACH_TI810XDVR)
+#if defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_TI810XDVR)
             /*set VGA as default fromat for DVR*/
             opinfo.dataformat = FVID2_DF_RGB24_888;
             opinfo.dvofmt = VPS_DC_DVOFMT_TRIPLECHAN_DISCSYNC;
@@ -3462,8 +3464,10 @@ int __exit vps_dc_deinit(struct platform_device *pdev)
 		dc_handle = NULL;
 	}
 
+	#ifndef CONFIG_MACH_UD8168_DVR
 	if ((!def_i2cmode) && (v_pdata->pcf_ths_exit))
 		v_pdata->pcf_ths_exit();
+	#endif
 
 	return r;
 }

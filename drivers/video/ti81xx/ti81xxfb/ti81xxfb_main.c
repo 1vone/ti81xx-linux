@@ -1272,6 +1272,13 @@ static int ti81xxfb_allocate_fbs(struct ti81xxfb_device *fbdev)
 
 		memset(vrams, 0, sizeof(vrams));
 	}
+	#ifdef CONFIG_MACH_UD8168_DVR
+	else {	//# phoong : fixed vram size of fb (default)
+		vrams[0] = 0x7E9000;	//# 8M (1920x1080x4, 0x7E9000)
+		vrams[1] = 0x7E9000;	//# 8M (1920x1080x4, 0x7E9000)
+		vrams[2] = 0x400000;	//# 4M (720x480(1080)x4, 0x151800(0x2F7600))
+	}
+	#endif
 
 	if (fbdev->dev->platform_data) {
 		struct ti81xxfb_platform_data *npd;
@@ -1637,6 +1644,7 @@ static int ti81xxfb_parse_def_modes(struct ti81xxfb_device *fbdev)
 
 }
 #endif
+
 static int ti81xxfb_probe(struct platform_device *dev)
 {
 	struct ti81xxfb_device  *fbdev = NULL;
@@ -1690,6 +1698,8 @@ static int ti81xxfb_probe(struct platform_device *dev)
 	if (0 != r)
 		goto cleanup;
 
+	printk("[module] ti81xxfb probe done.\n");
+
 	return 0;
 
 cleanup:
@@ -1712,6 +1722,9 @@ static int ti81xxfb_remove(struct platform_device *dev)
 	TFBDBG("remove sysfs for fbs.\n");
 	ti81xxfb_remove_sysfs(fbdev);
 	ti81xxfb_free_all(fbdev);
+
+	printk("[module] ti81xxfb remove done.\n");
+
 	return 0;
 }
 

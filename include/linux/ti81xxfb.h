@@ -57,6 +57,7 @@
 #define TIFB_SETUP_MEM    TIFB_IOW(8, struct ti81xxfb_mem_info)
 #define TIFB_QUERY_MEM    TIFB_IOR(9, struct ti81xxfb_mem_info)
 #define TIFB_SET_STENC    TIFB_IOW(10, struct ti81xxfb_stenciling_params)
+#define TIFB_CLOSE		  TIFB_IOW(11, int)
 
 
 enum ti81xxfb_status {
