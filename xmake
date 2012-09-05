@@ -1,0 +1,12 @@
+
+target_dir=".b/bin"
+cpu_num="8"
+
+echo -e "\n--------------------------------- start ---"
+make CROSS_COMPILE=arm-none-linux-gnueabi- ARCH=arm distclean
+make CROSS_COMPILE=arm-none-linux-gnueabi- ARCH=arm ti8168_dvr_defconfig
+make -j$cpu_num CROSS_COMPILE=arm-none-linux-gnueabi- ARCH=arm uImage
+make headers_install
+
+mv arch/arm/boot/uImage $target_dir/uImage_ud816x_dvr
+echo -e "--------------------------------- end -----\n"
