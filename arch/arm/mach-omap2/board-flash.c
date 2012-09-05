@@ -156,7 +156,11 @@ static struct gpmc_timings nand_timings_ti814x = {
 
 static struct omap_nand_platform_data board_nand_data = {
 	.nand_setup	= NULL,
+	#ifdef CONFIG_MACH_UD8168_DVR
+	.gpmc_t		= NULL,
+	#else
 	.gpmc_t		= &nand_timings,
+	#endif
 	.dma_channel	= -1,		/* disable DMA in OMAP NAND driver */
 	.dev_ready	= NULL,
 	.devsize	= 0,	/* '0' for 8-bit, '1' for 16-bit device */
