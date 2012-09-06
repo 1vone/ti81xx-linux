@@ -43,6 +43,7 @@
 #include "control.h"
 #include "pcie-ti81xx.h"
 
+#include <mach/board-ti816x.h>
 #include "devices.h"
 
 #if defined(CONFIG_VIDEO_OMAP2) || defined(CONFIG_VIDEO_OMAP2_MODULE)
@@ -1876,9 +1877,16 @@ static void __init ti81xx_video_mux(void)
 		omap_mux_init_signal("vin0_d19", OMAP_MUX_MODE1);
 		omap_mux_init_signal("vout0_r_cr0", OMAP_MUX_MODE1);
 		omap_mux_init_signal("tsi5_data", OMAP_MUX_MODE1);
-		#ifdef CONFIG_MACH_TI8168_DVR
-		omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE2);
-		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE2);
+		#ifdef CONFIG_MACH_UD8168_DVR 
+		if(get_dvr_hwver() > 0x50) {/**FIX:to avoid pinmux settings of VGA to get initialized only for PG2.0**/
+			omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE2);
+			omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE2);
+		}
+		else
+		{
+			omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
+			omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);			
+		}
 		#else
 		omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
 		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);		
