@@ -1876,8 +1876,13 @@ static void __init ti81xx_video_mux(void)
 		omap_mux_init_signal("vin0_d19", OMAP_MUX_MODE1);
 		omap_mux_init_signal("vout0_r_cr0", OMAP_MUX_MODE1);
 		omap_mux_init_signal("tsi5_data", OMAP_MUX_MODE1);
+		#ifdef CONFIG_MACH_TI8168_DVR
+		omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE2);
+		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE2);
+		#else
 		omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
-		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);		
+		#endif
 		omap_mux_init_signal("tsi5_pacerr", OMAP_MUX_MODE1);
 		omap_mux_init_signal("vin1_clk1",   OMAP_MUX_MODE2);
 		omap_mux_init_signal("vin0_hsync0", OMAP_MUX_MODE1);

@@ -899,6 +899,13 @@ void __init ti8168_hdmi_mclk_init(void)
 
 }
 #endif
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+static struct platform_device tvp5158_audio_device = {
+	.name	= "tvp5158-audio",
+	.id	= -1,
+};
+#endif	//# #ifdef CONFIG_SND_SOC_TI81XX_HDMI
+
 
 
 static void __init ti8168_evm_init(void)
@@ -909,6 +916,11 @@ static void __init ti8168_evm_init(void)
 	omap_serial_init();
 	ti816x_evm_i2c_init();
 	i2c_add_driver(&ti816xevm_cpld_driver);
+
+	#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+	platform_device_register(&tvp5158_audio_device);
+	#endif
+
 	ti81xx_register_mcasp(0, &ti8168_evm_snd_data);
 	ti816x_spi_init();
 	/* initialize usb */

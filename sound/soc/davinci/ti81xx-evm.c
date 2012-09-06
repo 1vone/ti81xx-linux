@@ -156,49 +156,74 @@ static struct snd_soc_dai_link ti81xx_mcasp_dai[] = {
 		.init = ti81xx_evm_aic3x_init,
 		.ops = &ti81xx_evm_ops,
 	},
+};
 #ifdef CONFIG_SND_SOC_TI81XX_HDMI
-	{
+static struct snd_soc_dai_link ti81xx_hdmi_dai = {
 		.name = "HDMI_SOC_LINK",
 		.stream_name = "hdmi",
 		.cpu_dai_name = "hdmi-dai",
 		.platform_name = "davinci-pcm-audio",
 		.codec_dai_name = "HDMI-DAI-CODEC",     /* DAI name */
 		.codec_name = "hdmi-dummy-codec",
-	},
-#endif	
 };
+#endif
 
-static struct snd_soc_card ti81xx_evm_mcasp_card = {
-	.name = "TI81XX EVM",
+static struct snd_soc_card ti81xx_evm_snd_card0 = {
+	.name = "TI81XX SOUND0",
 	.dai_link = ti81xx_mcasp_dai,
 	.num_links = ARRAY_SIZE(ti81xx_mcasp_dai),
 };
 
-static struct platform_device *ti81xx_pdev;
+#ifdef CONFIG_SND_SOC_TI81XX_HDMI
+static struct snd_soc_card ti81xx_evm_snd_card1 = {
+	.name = "TI81XX SOUND1",
+	.dai_link = &ti81xx_hdmi_dai,
+	.num_links = 1,
+};
+#endif
+
+static struct platform_device *ti81xx_pdev0;
+static struct platform_device *ti81xx_pdev1;
 
 static int __init ti81xx_evm_soc_init(void)
 {
 	int ret;
 
-	/* alsa hw0:0 -> AIC3x  */
-	ti81xx_pdev = platform_device_alloc("soc-audio", -1);
-	if (!ti81xx_pdev)
+	ti81xx_pdev0 = platform_device_alloc("soc-audio", 0);
+	if (!ti81xx_pdev0)
 		return -ENOMEM;
 	
-	platform_set_drvdata(ti81xx_pdev, &ti81xx_evm_mcasp_card);
-	ret = platform_device_add(ti81xx_pdev);
+	platform_set_drvdata(ti81xx_pdev0, &ti81xx_evm_snd_card0);
+	ret = platform_device_add(ti81xx_pdev0);
 	if (ret) {
 		printk(KERN_ERR "Can't add soc platform device\n");
-		platform_device_put(ti81xx_pdev);
+		platform_device_put(ti81xx_pdev0);
 		return ret;
 	}
+	
+	ti81xx_pdev1 = platform_device_alloc("soc-audio", 1);
+	if (!ti81xx_pdev1) {
+		platform_device_put(ti81xx_pdev0);
+		return -ENOMEM;
+	}
+	
+	platform_set_drvdata(ti81xx_pdev1, &ti81xx_evm_snd_card1);
+	ret = platform_device_add(ti81xx_pdev1);
+	if (ret) {
+		printk(KERN_ERR "Can't add soc platform device\n");
+		platform_device_put(ti81xx_pdev0);
+		platform_device_put(ti81xx_pdev1);
+		return ret;
+	}
+	
 	
 	return ret;
 }
 
 static void __exit ti81xx_evm_soc_exit(void)
 {
-	platform_device_unregister(ti81xx_pdev);
+	platform_device_unregister(ti81xx_pdev0);
+	platform_device_unregister(ti81xx_pdev1);
 }
 
 module_init(ti81xx_evm_soc_init);
