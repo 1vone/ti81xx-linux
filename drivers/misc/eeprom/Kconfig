@@ -70,11 +70,12 @@ config EEPROM_93CX6
 
 	  If unsure, say N.
 
-config EEPROM_3WIRED_AT93C66
-	tristate "3-wired EEPROM 93C66 support"
+config EEPROM_UDDVR
+	tristate "GPIO based EEPROM support on UD_DVR Board"
+	depends on GENERIC_GPIO
 	help
-	  This is a driver for the EEPROM chipset 93c66
-	  used 3-wired(gpio) interface.
-	  The driver supports read command only.
+	  This is a driver for the GPIO based EEPROM chipsets 93c66.
+	  The driver supports both read as well as write commands.
 
+	  If unsure, say N.
 endmenu
