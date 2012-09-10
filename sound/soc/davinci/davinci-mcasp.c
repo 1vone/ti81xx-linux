@@ -480,9 +480,6 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 
 		mcasp_clr_bits(base + DAVINCI_MCASP_PDIR_REG, (0x3f << 26));
 
-#if defined(CONFIG_SND_TI81XX_SOC_UDDVR)  || defined(CONFIG_SND_TI81XX_SOC_EVM)
-		mcasp_set_bits(base + DAVINCI_MCASP_PDIR_REG, (0x1 << 27));
-#else
 		/* TI811x AIC_MCLK <-- McASP2_AHCLKX(Pin out) */
 		switch (dev->clk_input_pin) {
 		case MCASP_AHCLKX_IN:
@@ -494,7 +491,6 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		default:
 			return -EINVAL;
 		}
-#endif
 		break;
 
 	default:
