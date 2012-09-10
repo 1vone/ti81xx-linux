@@ -63,6 +63,10 @@
 #include <asm/irq.h>
 #include <asm/page.h>
 
+#ifdef CONFIG_MACH_UD8168_DVR
+#include <linux/eeprom_uddvr.h>
+#endif
+
 #include "davinci_cpdma.h"
 
 static int debug_level;
@@ -382,7 +386,6 @@ static char *emac_rxhost_errcodes[16] = {
 
 #ifdef CONFIG_MACH_UD8168_DVR
 #define TI816X_EMAC1_HW_RAM_ADDR	(0x4A102000)
-extern u8 gpio_eeprom_read(int addr);
 #endif
 
 /**
@@ -1869,7 +1872,7 @@ static int __devinit davinci_emac_probe(struct platform_device *pdev)
 	struct cpdma_params dma_params;
 
 #ifdef CONFIG_MACH_UD8168_DVR
-	int i, offset;
+	int offset;
 #endif
 	/* obtain emac clock from kernel */
 	emac_clk = clk_get(&pdev->dev, NULL);
@@ -1908,9 +1911,8 @@ static int __devinit davinci_emac_probe(struct platform_device *pdev)
 		offset = 1;
 	else
 		offset = 9;
-
-	for (i = 0; i < 6; i++)
-		pdata->mac_addr[i] = gpio_eeprom_read(i+offset);
+	
+	eeprom_uddvr_read(offset, 6, pdata->mac_addr);
 #endif
 
 	memcpy(priv->mac_addr, pdata->mac_addr, 6);
