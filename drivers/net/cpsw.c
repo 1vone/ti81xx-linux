@@ -928,6 +928,22 @@ static void cpsw_set_phy_config(struct cpsw_priv *priv, struct phy_device *phy)
 	miibus->write(miibus, phy_addr, MII_ADVERTISE, val);
 	tmp = miibus->read(miibus, phy_addr, MII_ADVERTISE);
 
+	#if defined(CONFIG_MACH_UD8107_DVR)
+	/* select Page 7  */
+	miibus->write(miibus, phy_addr, 31, 7);
+	/* read Register 16 RMII Mode setting (RMSR) */
+	val = miibus->read(miibus, phy_addr, 16);
+	val |= 1 << 3; //# RMII set
+	val &= ~(1 << 12); /* RMII reference from PHY */
+	miibus->write(miibus, phy_addr, 16, val);
+	/* read Register 19 */
+	val = miibus->read(miibus, phy_addr, 19);
+	val &= 0xffcF; //clear led function
+	val |= 1 << 4; //led sel_1
+	miibus->write(miibus, phy_addr, 19, val);
+	/* select Page 0 */
+	miibus->write(miibus, phy_addr, 31, 0);
+	#endif
 	return;
 }
 
