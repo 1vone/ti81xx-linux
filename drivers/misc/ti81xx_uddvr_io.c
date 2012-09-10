@@ -1,5 +1,5 @@
 /******************************************************************************
- * TI8168 DVR Board
+ * TI81XX DVR Board
  * Copyright by UDWorks, Incoporated. All Rights Reserved.
  *-----------------------------------------------------------------------------
  * This program is free software; you can redistribute it and/or modify it
@@ -13,7 +13,7 @@
  * General Public License for more details.
  *---------------------------------------------------------------------------*/
  /**
- * @file	dm8168_dvr_io.c
+ * @file	dm81xx_dvr_io.c
  * @brief
  * @author
  * @section	MODIFY history
@@ -81,7 +81,7 @@ static dev_dvrio_t *dvrio;
 /*----------------------------------------------------------------------------
  Local function
 -----------------------------------------------------------------------------*/
-static void dvrio_check_io(unsigned int data)
+static void dvrio_check_io(unsigned long data)
 {
 	dprintk("dvrio_check_io\n");
 
@@ -146,82 +146,86 @@ static ssize_t dvrio_read(struct file *file, char __user *buf, size_t count, lof
 	return ret;
 }
 
-static int dvrio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long dvrio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret;
 	dvrio_t io;
 	int irq, i;
 
-	if (copy_from_user(&io, (void __user *)arg, sizeof(dvrio_t)))
+	ret = copy_from_user(&io, (void __user *)arg, sizeof(dvrio_t));
+	if (ret) {
+		printk(KERN_ERR "failed to get user data(err = %d)\n", ret);
 		return -EFAULT;
+	}
 
 	dprintk("dvrio_ioctl cmd(%d), gpio(%d)\n", cmd, io.gpio);
 
-	switch (cmd)
-	{
-		case DVRIO_CMD_INIT:
-		{
-			gpio_request(io.gpio, "dvrio");
-			if(io.dir) {
-				gpio_direction_output(io.gpio, io.val);
-			} else {
-				gpio_direction_input(io.gpio);
+	switch (cmd) {
+	case DVRIO_CMD_INIT:
+		ret = gpio_request(io.gpio, "dvrio");
+		if (ret) {
+			printk(KERN_ERR "%s: failed to request GPIO[%d]\n", __func__, io.gpio);
+			return ret;
+		}
+		
+		if (io.dir) {
+			gpio_direction_output(io.gpio, io.val);
+		} 
+		else {
+			gpio_direction_input(io.gpio);
 
+			irq = gpio_to_irq(io.gpio);
+			if (irq < 0) {
+				printk(KERN_ERR "Unable to get irq number %d\n", io.gpio);
+				return -EINVAL;
+			}
+
+			ret = request_irq(irq,
+					dvrio_isr,
+					io.trigger,
+					"dvr_io", (void *)&dvrio->irq_gpio[dvrio->irq_cnt]);
+			if (ret < 0) {
+				printk(KERN_ERR "gpio request irq failed %d\n", ret);
+			} else {
+				dvrio->irq_gpio[dvrio->irq_cnt++] = io.gpio;
+			}
+		}
+		break;
+	case DVRIO_CMD_CHG_IRQ:
+	{
+		for(i=0; i<dvrio->irq_cnt; i++)
+		{
+			if(io.gpio == dvrio->irq_gpio[i])
+			{
 				irq = gpio_to_irq(io.gpio);
 				if (irq < 0) {
 					eprintk("Unable to get irq number %d\n", io.gpio);
 				}
 				dprintk("io.gpio %d(%d)\n", io.gpio, irq);
 
+				free_irq(irq, &dvrio->irq_gpio[i]);
+
 				ret = request_irq(irq,
 						dvrio_isr,
 						io.trigger,
-						"dvr_io", (void *)&dvrio->irq_gpio[dvrio->irq_cnt]);
+						"dvr_io", (void *)&dvrio->irq_gpio[i]);
 				if(ret < 0) {
 					eprintk("gpio request irq failed %d\n", ret);
-				} else {
-					dvrio->irq_gpio[dvrio->irq_cnt++] = io.gpio;
 				}
+				break;
 			}
-			break;
 		}
-		case DVRIO_CMD_CHG_IRQ:
-		{
-			for(i=0; i<dvrio->irq_cnt; i++)
-			{
-				if(io.gpio == dvrio->irq_gpio[i])
-				{
-					irq = gpio_to_irq(io.gpio);
-					if (irq < 0) {
-						eprintk("Unable to get irq number %d\n", io.gpio);
-					}
-					dprintk("io.gpio %d(%d)\n", io.gpio, irq);
-
-					free_irq(irq, &dvrio->irq_gpio[i]);
-
-					ret = request_irq(irq,
-							dvrio_isr,
-							io.trigger,
-							"dvr_io", (void *)&dvrio->irq_gpio[i]);
-					if(ret < 0) {
-						eprintk("gpio request irq failed %d\n", ret);
-					}
-					break;
-				}
-			}
-			break;
+		break;
+	}
+	case DVRIO_CMD_RD:
+		dprintk("DVRIO_CMD_RD");
+		io.val = gpio_get_value(io.gpio);
+		if (copy_to_user((void __user *)arg, &io, sizeof(dvrio_t))) {
+			return -EFAULT;
 		}
-		case DVRIO_CMD_RD:
-		{
-			dprintk("DVRIO_CMD_RD");
-			io.val = gpio_get_value(io.gpio);
-			if (copy_to_user((void __user *)arg, &io, sizeof(dvrio_t))) {
-				return -EFAULT;
-			}
-			break;
-		}
-		default:
-			break;
+		break;
+	default:
+		break;
 	}
 
 	return 0;
@@ -242,7 +246,7 @@ static int dvrio_open(struct inode *inode, struct file *file)
 
 	dvrio->debounce_interval = DBOUNCE_TIME;
 
-	setup_timer(&dvrio->timer, dvrio_check_io, 0);
+	setup_timer(&dvrio->timer, dvrio_check_io, (unsigned long)0);
 
 	mutex_init(&dvrio->mutex);
 	init_waitqueue_head(&dvrio->wait);
@@ -256,8 +260,8 @@ static int dvrio_release(struct inode *inode, struct file *file)
 {
 	int i;
 
-	if(dvrio->irq_cnt) {
-		for(i=0; i<dvrio->irq_cnt; i++)
+	if (dvrio->irq_cnt) {
+		for (i = 0; i < dvrio->irq_cnt; i++)
 			free_irq((gpio_to_irq(dvrio->irq_gpio[i])), &dvrio->irq_gpio[i]);
 	}
 
