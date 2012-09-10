@@ -2296,7 +2296,7 @@ struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs  = 0x50,
 		.sliver_reg_ofs = 0x700,
-#ifdef CONFIG_MACH_TI810XDVR
+#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
         .phy_id     = "0:01", // in baichuan 810X board, emac 0 is used as channel input
 #else
 		.phy_id		= "0:00",
@@ -2306,7 +2306,8 @@ struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs  = 0x90,
 		.sliver_reg_ofs = 0x740,
-#ifdef CONFIG_MACH_TI810XDVR
+#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
+		/* in DVR_RDK, emac 1 is used as channel input */
         .phy_id     = "0:00",
 #else
 		.phy_id		= "0:01",
@@ -2330,7 +2331,8 @@ static struct cpsw_platform_data ti814x_cpsw_pdata = {
 	.bd_ram_ofs		= 0x2000,
 	.bd_ram_size		= SZ_8K,
 	.rx_descs               = 64,
-#ifdef CONFIG_MACH_TI810XDVR
+
+#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_TI8107_DVR)
     .mac_control            = BIT(5)|BIT(15), /* MIIEN */
 #else
 	.mac_control            = BIT(5), /* MIIEN */
@@ -2465,7 +2467,7 @@ void ti814x_cpsw_init(void)
 			(cpu_is_ti814x() && omap_rev() > TI8148_REV_ES1_0))) 
 		cpsw_slaves[0].phy_id = "0:01";
 
-#ifdef CONFIG_MACH_TI810XDVR
+#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
         cpsw_slaves[0].phy_id = "0:01";
         cpsw_slaves[1].phy_id = "0:00";
 #endif 
@@ -2511,6 +2513,10 @@ static void ti81xx_ethernet_init(void)
 		ti814x_cpsw_init();
 }
 
+#ifdef CONFIG_MACH_UD8107_DVR
+#undef SATA_INTERNAL_20MHz		
+#endif
+
 static inline void ti814x_sata_pllcfg(void)
 {
 	if (!cpu_is_ti814x())
@@ -2547,13 +2553,32 @@ static inline void ti814x_sata_pllcfg(void)
 			cpu_relax();
 	} else {
 		/* Configure 20Mhz clock source on ti813x */
+#if defined(CONFIG_MACH_UD8107_DVR) && defined(SATA_INTERNAL_20MHz)
+		omap_ctrl_writel(0x80000004, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 20 MHz Operation) */
+		omap_ctrl_writel(0xC12C003C, TI814X_CONTROL_SATA_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_SATA_PLLCFG3);
+		udelay(2000);
+		omap_ctrl_writel(0x80000014, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x80000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 0xC00000016 for 20MHz */
+		omap_ctrl_writel(0xC0000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(2000);
+		/* cfgpll0 0xC0007077 for 20MHz */
+		omap_ctrl_writel(0xC0007077, TI814X_CONTROL_SATA_PLLCFG0);
+		while (!(omap_ctrl_readl(TI814X_CONTROL_SATA_PLLSTATUS) & 0x1))
+			cpu_relax();
+#endif
 	}
 
 }
 
 static inline void ti814x_pcie_pllcfg(void)
 {
-
 	if (cpu_is_ti814x()) {
 		/* TODO: Add bitfield macros for following */
 
@@ -2598,9 +2623,7 @@ static inline void ti814x_pcie_pllcfg(void)
 
 		while (!(omap_ctrl_readl(TI814X_CONTROL_PCIE_PLLSTATUS) & 0x1))
 			cpu_relax();
-
 	}
-
 }
 #endif
 
@@ -2708,8 +2731,8 @@ static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base)
 
 		writel(phy_val, base + SATA_P0PHYCR_REG);
 		writel(phy_val, base + SATA_P1PHYCR_REG);
-	} else if (cpu_is_ti814x()) {
-
+	} 
+	else if (cpu_is_ti814x()) {
 		if (cpu_is_dm385()) {
 			/* Configuring for 20Mhz clock source on TI813x */
 			writel(TI813X_SATA_PHY_CFGRX0_VAL,
@@ -2879,7 +2902,7 @@ static struct platform_device ti81xx_mcasp_device = {
 	.name = "davinci-mcasp",
 };
 
-#if defined(CONFIG_SND_TI81XX_SOC_EVM) || defined(CONFIG_SND_UD8168_SOC_DVR)
+#if defined(CONFIG_SND_TI81XX_SOC_EVM)
 static u8 tvp5158_iis_serializer_direction[] = {
 	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
@@ -2934,15 +2957,6 @@ static struct platform_device ti81xx_mcasp0_device = {
 
 void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 {
-#if defined(CONFIG_SND_UD8168_SOC_DVR)
-	ti81xx_mcasp_device.id = 2;
-	ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
-	ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
-	ti81xx_mcasp_device.dev.platform_data = pdata;
-
-	platform_device_register(&ti81xx_mcasp_device);
-	platform_device_register(&ti81xx_mcasp0_device);
-#else
 	if (machine_is_ti8168evm() || machine_is_ti8148evm()
 				|| machine_is_ti811xevm()) {
 		ti81xx_mcasp_device.id = 2;
@@ -2964,7 +2978,6 @@ void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 
 #if defined(CONFIG_SND_TI81XX_SOC_EVM)
 		platform_device_register(&ti81xx_mcasp0_device);
-#endif
 #endif
 }
 #endif
@@ -3184,6 +3197,76 @@ static void __init clkout2_enable(void)
 }
 #endif
 
+
+#ifdef CONFIG_MACH_UD8107_DVR
+static int __init ti810x_dvr_mux_int(void)
+{
+	u32 pinctrl;
+	
+	/* PIN mux for sensor & alarm */
+	omap_mux_init_signal("vout1_g_y_yc3.gpio3_7", TI814X_INPUT_EN);	/* sensor_in1_gp3[7] */
+	omap_mux_init_signal("vout1_g_y_yc4.gpio3_8", TI814X_INPUT_EN);	/* sensor_in2_gp3[8] */
+	omap_mux_init_signal("vout1_g_y_yc5.gpio3_9", TI814X_INPUT_EN);	/* sensor_in3_gp3[9] */
+	omap_mux_init_signal("vout1_g_y_yc6.gpio3_10", TI814X_INPUT_EN);	/* sensor_in4_gp3[10] */
+	omap_mux_init_signal("vout1_g_y_yc7.gpio3_11", TI814X_INPUT_EN);	/* sensor_in5_gp3[11] */
+	omap_mux_init_signal("vout1_g_y_yc8.gpio3_12", TI814X_INPUT_EN);	/* sensor_in6_gp3[12] */
+	omap_mux_init_signal("vout1_g_y_yc9.gpio3_13", TI814X_INPUT_EN);	/* sensor_in7_gp3[13] */
+	omap_mux_init_signal("vout1_r_cr4.gpio3_14", TI814X_INPUT_EN);	/* sensor_in8_gp3[14] */
+	omap_mux_init_signal("vout1_r_cr5.gpio3_15", TI814X_INPUT_EN);	/* sensor_in9_gp3[15] */
+	omap_mux_init_signal("vout1_r_cr6.gpio3_16", TI814X_INPUT_EN);	/* sensor_in10_gp3[16] */
+	omap_mux_init_signal("vout1_r_cr7.gpio3_17", TI814X_INPUT_EN);	/* sensor_in11_gp3[17] */
+	omap_mux_init_signal("vout1_r_cr8.gpio3_18", TI814X_INPUT_EN);	/* sensor_in12_gp3[18] */
+	omap_mux_init_signal("vout1_r_cr9.gpio3_19", TI814X_INPUT_EN);	/* sensor_in13_gp3[19] */
+	omap_mux_init_signal("vout1_g_y_yc2.gpio3_20", TI814X_INPUT_EN);	/* sensor_in14_gp3[20] */
+	omap_mux_init_signal("vout1_r_cr3.gpio3_21", TI814X_INPUT_EN);	/* sensor_in15_gp3[21] */			
+	omap_mux_init_signal("vout1_r_cr2.gpio3_22", TI814X_INPUT_EN);	/* sensor_in16_gp3[22] */
+	omap_mux_init_signal("vout1_g_y_yc1.gpio0_22_mux0", 0);	/* alarm_out1_gp0[22] */
+	omap_mux_init_signal("vout1_g_y_yc0.gpio0_23_mux0", 0);	/* alarm_out1_gp0[23] */
+	omap_mux_init_signal("vout1_r_cr1.gpio0_24_mux0", 0);	/* alarm_out1_gp0[24] */
+	omap_mux_init_signal("vout1_r_cr0.gpio0_25_mux0", 0);	/* alarm_out1_gp0[25] */
+	omap_mux_init_signal("vout1_clk.gpio2_28",   0);	/* buzzer_en_gp2[28] */		
+	
+	omap_mux_init_signal("uart0_dtrn.uart1_txd_mux0",   0);	/* RS485_TX */
+	omap_mux_init_signal("uart0_rin.uart1_rxd_mux0",   
+							(TI814X_PULL_DIS | TI814X_INPUT_EN));	/* RS485_RX */
+	
+	omap_mux_init_signal("xref_clk1.mcasp1_ahclkx",   0);	/* MCA[1]_ahclkx */
+	omap_mux_init_signal("gpmc_a_23_mux0.hdmi_hpd_mux0", 
+						(TI814X_PULL_DIS | TI814X_INPUT_EN));
+	
+	omap_mux_init_signal("dcan0_tx.uart2_txd_mux2",   0);	/* UART2_TXD */
+	omap_mux_init_signal("dcan0_rx.uart2_rxd_mux2", 
+						(TI814X_PULL_DIS | TI814X_INPUT_EN));	/* UART2_RXD */
+	
+	omap_mux_init_signal("spi1_cs0.gpio1_16_mux1", 0);	/* Front_Shutdown */
+						
+	/* AF31 -> usb1drvvbus */
+	pinctrl = __raw_readl(TI81XX_CTRL_REGADDR(0x0834)) & 0xfff3ff00;
+	pinctrl |= 0x80;
+	__raw_writel(pinctrl, TI81XX_CTRL_REGADDR(0x0834));	
+	
+	return 0;
+}
+
+#define GIO(bk,io) ((32*bk)+io)
+static int __init ti810x_dvr_gpio_init(void)
+{
+	gpio_request(GIO(2,28), "buzzer");
+	/* default enable */
+	gpio_direction_output(GIO(2,28), 0);
+	/* direction can't change */
+	gpio_export(GIO(2,28), 0);
+	
+	gpio_request(GIO(1,16), "to_front");
+	/* default enable */
+	gpio_direction_output(GIO(1,16), 1);
+	/* direction can't change */
+	gpio_export(GIO(1,16), 0);
+	
+	return 0;
+}
+#endif
+
 static int __init omap2_init_devices(void)
 {
 	/*
@@ -3229,10 +3312,17 @@ static int __init omap2_init_devices(void)
 #endif
 #endif
 	omap_init_ahci();
+
 #ifdef CONFIG_ARCH_TI81XX
 	ti81xx_rtc_init();
 	clkout2_enable();
 #endif
+
+#ifdef CONFIG_MACH_UD8107_DVR
+	ti810x_dvr_mux_int();
+	ti810x_dvr_gpio_init();
+#endif
+
 	return 0;
 }
 arch_initcall(omap2_init_devices);

@@ -258,6 +258,11 @@ obj-$(CONFIG_MACH_TI8148EVM)		+= board-ti8148evm.o \
 obj-$(CONFIG_MACH_DM385EVM)		+= board-dm385evm.o \
 					   hsmmc.o \
 					   board-flash.o
+
+obj-$(CONFIG_MACH_UD8107_DVR)	+= board-ti8107dvr.o \
+					   hsmmc.o \
+					   board-flash.o
+
 obj-$(CONFIG_MACH_TI811XEVM)		+= board-ti811xevm.o \
 					   hsmmc.o \
 					   board-flash.o
@@ -266,8 +271,7 @@ obj-$(CONFIG_MACH_TI8168EVM)		+= board-ti8168evm.o \
 					   board-flash.o
 obj-$(CONFIG_MACH_UD8168_DVR)		+= board-ti8168dvr.o \
 					   hsmmc.o \
-					   board-flash.o \
-                                           wire3_rom-dvr.o
+					   board-flash.o
 
 # Platform specific device init code
 usbfs-$(CONFIG_ARCH_OMAP_OTG)		:= usb-fs.o
