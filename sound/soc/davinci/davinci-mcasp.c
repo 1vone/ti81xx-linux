@@ -343,7 +343,7 @@ static inline void mcasp_set_ctl_reg(void __iomem *regs, u32 val)
 }
 
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
 static inline void mcasp_ahclkx_enable(struct davinci_audio_dev *dev)
 {
 	u32 reg;
@@ -480,7 +480,7 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 
 		mcasp_clr_bits(base + DAVINCI_MCASP_PDIR_REG, (0x3f << 26));
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR)  || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR)  || defined(CONFIG_SND_TI81XX_SOC_EVM)
 		mcasp_set_bits(base + DAVINCI_MCASP_PDIR_REG, (0x1 << 27));
 #else
 		/* TI811x AIC_MCLK <-- McASP2_AHCLKX(Pin out) */
@@ -538,7 +538,7 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		return -EINVAL;
 	}
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
 	dev->codec_fmt = fmt;
 #endif
 
@@ -695,7 +695,7 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
 			printk(KERN_ERR "playback tdm slot %d not supported\n",
 				dev->tdm_slots);
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR)	|| defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR)	|| defined(CONFIG_SND_TI81XX_SOC_EVM)
 		switch(dev->codec_fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 		case SND_SOC_DAIFMT_I2S:
 		case SND_SOC_DAIFMT_DSP_A:
@@ -724,7 +724,7 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
 			printk(KERN_ERR "capture tdm slot %d not supported\n",
 				dev->tdm_slots);
 		
-#if defined(CONFIG_SND_UD8168_SOC_DVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR)	|| defined(CONFIG_SND_TI81XX_SOC_EVM)
 		switch(dev->codec_fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 		case SND_SOC_DAIFMT_I2S:
 		case SND_SOC_DAIFMT_DSP_A:	
@@ -897,7 +897,7 @@ static struct snd_soc_dai_driver davinci_mcasp_dai[] = {
 		.capture 	= {
 			.channels_min 	= 2,
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
 			.channels_max 	= 16,
 #else			 
 			.channels_max 	= 2,
@@ -931,6 +931,9 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 	struct davinci_audio_dev *dev;
 	int ret = 0;
 
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) && defined(CONFIG_MACH_UD8107_DVR)
+	struct clk *parent;
+#endif
 	dev = kzalloc(sizeof(struct davinci_audio_dev), GFP_KERNEL);
 	if (!dev)
 		return	-ENOMEM;
@@ -957,15 +960,32 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 		goto err_release_region;
 	}
 
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) && defined(CONFIG_MACH_UD8107_DVR)
+	/* change clkmux to sysclk22(20MHz) */
+	parent = clk_get(NULL, "sysclk22_ck");
+	if (IS_ERR(parent)) {
+		ret = -ENODEV;
+		goto err_release_region;
+	}
+	
+	ret = clk_set_parent(dev->clk, parent);
+	if (ret < 0) {
+		printk(KERN_ERR "mcasp%d:Unable to set parent clk\n", pdev->id);
+		ret = -ENODEV;
+		goto err_release_region;
+	}
+#endif
 	clk_enable(dev->clk);
 	dev->clk_active = 1;
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+	#ifndef CONFIG_MACH_UD8107_DVR
 	/*
 	 * CM_SYSCLK20->196608000 SYS_CLK divided by 8 = 24576000
 	 */
 	if (pdev->id == 2)
 		clk_set_rate(dev->clk, 24576000);
+	#endif
 #endif
 
 	dev->base = ioremap(mem->start, resource_size(mem));
@@ -1027,7 +1047,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 	if (ret != 0)
 		goto err_iounmap;
 
-#if defined(CONFIG_SND_UD8168_SOC_DVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_UDDVR) || defined(CONFIG_SND_TI81XX_SOC_EVM)
 	if (pdev->id == 2)
 		mcasp_ahclkx_enable(dev);
 #endif

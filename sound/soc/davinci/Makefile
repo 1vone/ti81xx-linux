@@ -16,7 +16,7 @@ obj-$(CONFIG_SND_SOC_TI81XX_HDMI) += snd-soc-davinci-hdmi.o
 # snd-soc-evm-objs := davinci-evm.o
 snd-soc-evm-objs := ti81xx-evm.o
 snd-soc-sffsdr-objs := davinci-sffsdr.o
-snd-soc-ti81xx-dvr-objs := ti81xx-dvr.o
+snd-soc-ti81xx-uddvr-objs := ti81xx-uddvr.o
 
 obj-$(CONFIG_SND_DAVINCI_SOC_EVM) += snd-soc-evm.o
 obj-$(CONFIG_SND_DM6467_SOC_EVM) += snd-soc-evm.o
@@ -24,4 +24,4 @@ obj-$(CONFIG_SND_DA830_SOC_EVM) += snd-soc-evm.o
 obj-$(CONFIG_SND_DA850_SOC_EVM) += snd-soc-evm.o
 obj-$(CONFIG_SND_TI81XX_SOC_EVM) += snd-soc-evm.o
 obj-$(CONFIG_SND_DAVINCI_SOC_SFFSDR) += snd-soc-sffsdr.o
-obj-$(CONFIG_SND_UD8168_SOC_DVR) += snd-soc-ti81xx-dvr.o
+obj-$(CONFIG_SND_TI81XX_SOC_UDDVR) += snd-soc-ti81xx-uddvr.o

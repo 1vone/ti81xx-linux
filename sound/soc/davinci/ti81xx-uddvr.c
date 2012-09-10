@@ -30,9 +30,38 @@
 #include "davinci-i2s.h"
 #include "davinci-mcasp.h"
 
-#define AUDIO_FORMAT  (SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM)
+static int ti81xx_tvp5158_hw_params(struct snd_pcm_substream *substream,
+			 struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	unsigned fmt = 0;
+	int ret = 0;
+	
+	fmt = (SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM |
+		SND_SOC_DAIFMT_NB_IF); 
+	
+	/* DVR RDK used TX_SYNC mode(via CLKX) */
+	/* TVP5158 side:
+	 * DSP: valid data -> WS(falling), BCLK->(rising), 1clk delay 
+	 * I2S: valid data -> WS(falling), BCLK->(rising), 1clk delay 
+	 * McASP side:
+	 * WS(falling), BCLK->falling, 1clk delay valid. 
+	 */
+	/* set cpu DAI configuration */
+	ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
+	if (ret < 0) {
+		printk(KERN_ERR "Couldn't set cpu dai format(%d)\n", ret);
+		return ret;
+	}
+	
+	return 0;
+}
 
-static int ti81xx_dvr_hw_params(struct snd_pcm_substream *substream,
+static struct snd_soc_ops ti81xx_tvp5158_ops = {
+	.hw_params = ti81xx_tvp5158_hw_params,
+};
+static int ti81xx_aic3x_hw_params(struct snd_pcm_substream *substream,
 			 struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -40,55 +69,46 @@ static int ti81xx_dvr_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	unsigned sysclk, fmt = 0;
 	int ret = 0;
-
+	
 	/* default */
+	#if defined(CONFIG_MACH_UD8168_DVR)
 	sysclk = 24576000;
-
-	fmt = AUDIO_FORMAT;
-
-	/* DVR RDK used TX_SYNC mode(via CLKX) */
-	if (!strcmp(rtd->dai_link->name, "TVP5158AUDIO")) {
-		/* TVP5158 side:
-		 * DSP: valid data -> WS(falling), BCLK->(rising), 1clk delay
-		 * I2S: valid data -> WS(falling), BCLK->(rising), 1clk delay
-		 * McASP side:
-		 * WS(falling), BCLK->falling, 1clk delay valid.
-		 */
-		fmt |= SND_SOC_DAIFMT_NB_IF;
-	} else {
-		/* AIC3x is valid NB_NF, if audio I2S
-		 * DSP: valid data -> WS(rising), BCLK->(falling), no delay
-		 * I2S: valid data -> WS(falling), BCLK->(rising), 1clk delay
-		 */
-		fmt |= SND_SOC_DAIFMT_NB_NF;
-	}
-
-	/* set codec DAI configuration */
+	#else
+	sysclk = 20000000;
+	#endif
+	
+	fmt = (SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM |
+	    SND_SOC_DAIFMT_NB_NF); 
+	
+	/* AIC3x is valid NB_NF, if audio I2S 
+	 * DSP: valid data -> WS(rising), BCLK->(falling), no delay 
+	 * I2S: valid data -> WS(falling), BCLK->(rising), 1clk delay 
+	 */
 	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
 	if (ret < 0) {
 		printk(KERN_ERR "Couldn't set codec dai format(%d)\n", ret);
 		return ret;
 	}
-
+	
 	/* set cpu DAI configuration */
 	ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
 	if (ret < 0) {
 		printk(KERN_ERR "Couldn't set cpu dai format(%d)\n", ret);
 		return ret;
 	}
-
+	
 	/* set the codec system clock */
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0, sysclk, SND_SOC_CLOCK_OUT);
 	if (ret < 0) {
 		printk(KERN_ERR "Couldn't set codec dai system clock(%d)\n", ret);
 		return ret;
 	}
-
+	
 	return 0;
 }
 
-static struct snd_soc_ops ti81xx_dvr_ops = {
-	.hw_params = ti81xx_dvr_hw_params,
+static struct snd_soc_ops ti81xx_aic3x_ops = {
+	.hw_params = ti81xx_aic3x_hw_params,
 };
 
 /* davinci-evm machine dapm widgets */
@@ -155,17 +175,22 @@ static struct snd_soc_dai_link ti81xx_mcasp_dai[] = {
 		.codec_dai_name = "tvp5158-hifi",
 		.platform_name ="davinci-pcm-audio",
 		.codec_name = "tvp5158-audio",
-		.ops = &ti81xx_dvr_ops,
+		.ops = &ti81xx_tvp5158_ops,
 	},
 	{
 		.name = "TLV320AIC3X",
 		.stream_name = "AIC3X",
+		#if defined(CONFIG_MACH_UD8168_DVR)
 		.cpu_dai_name= "davinci-mcasp.2",
+		#else
+		/* TI8107 DVR */
+		.cpu_dai_name= "davinci-mcasp.1",
+		#endif
 		.codec_dai_name = "tlv320aic3x-hifi",
 		.codec_name = "tlv320aic3x-codec.1-0018",
 		.platform_name = "davinci-pcm-audio",
 		.init = ti81xx_dvr_aic3x_init,
-		.ops = &ti81xx_dvr_ops,
+		.ops = &ti81xx_aic3x_ops,
 	}
 };
 
@@ -180,15 +205,15 @@ static struct snd_soc_dai_link ti81xx_hdmi_dai = {
 };
 #endif
 
-static struct snd_soc_card ti81xx_dvr_snd_card0 = {
-	.name = "TI81XX SOUND0",
+static struct snd_soc_card ti81xx_dvr_mcasp_card = {
+	.name = "TI81XX_DVR_CARD0",
 	.dai_link = ti81xx_mcasp_dai,
 	.num_links = ARRAY_SIZE(ti81xx_mcasp_dai),
 };
 
 #ifdef CONFIG_SND_SOC_TI81XX_HDMI
-static struct snd_soc_card ti81xx_dvr_snd_card1 = {
-	.name = "TI81XX SOUND1",
+static struct snd_soc_card ti81xx_dvr_mcasp_card1 = {
+	.name = "TI81XX_DVR_CARD1",
 	.dai_link = &ti81xx_hdmi_dai,
 	.num_links = 1,
 };
@@ -204,22 +229,22 @@ static int __init ti81xx_dvr_soc_init(void)
 	ti81xx_pdev0 = platform_device_alloc("soc-audio", 0);
 	if (!ti81xx_pdev0)
 		return -ENOMEM;
-
-	platform_set_drvdata(ti81xx_pdev0, &ti81xx_dvr_snd_card0);
+	
+	platform_set_drvdata(ti81xx_pdev0, &ti81xx_dvr_mcasp_card);
 	ret = platform_device_add(ti81xx_pdev0);
 	if (ret) {
 		printk(KERN_ERR "Can't add soc platform device\n");
 		platform_device_put(ti81xx_pdev0);
 		return ret;
 	}
-
+	
 	ti81xx_pdev1 = platform_device_alloc("soc-audio", 1);
 	if (!ti81xx_pdev1) {
 		platform_device_put(ti81xx_pdev0);
 		return -ENOMEM;
 	}
-
-	platform_set_drvdata(ti81xx_pdev1, &ti81xx_dvr_snd_card1);
+	
+	platform_set_drvdata(ti81xx_pdev1, &ti81xx_dvr_mcasp_card1);
 	ret = platform_device_add(ti81xx_pdev1);
 	if (ret) {
 		printk(KERN_ERR "Can't add soc platform device\n");
@@ -227,8 +252,8 @@ static int __init ti81xx_dvr_soc_init(void)
 		platform_device_put(ti81xx_pdev1);
 		return ret;
 	}
-
-
+	
+	
 	return ret;
 }
 
