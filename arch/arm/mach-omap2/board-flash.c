@@ -108,6 +108,7 @@ __init board_onenand_init(struct mtd_partition *nor_parts, u8 nr_parts, u8 cs)
 		defined(CONFIG_MTD_NAND_OMAP2_MODULE)
 
 /* Note that all values in this struct are in nanoseconds */
+#if !defined(CONFIG_MACH_UD8168_DVR) && !defined(CONFIG_MACH_UD8107_DVR)
 static struct gpmc_timings nand_timings = {
 
 	.sync_clk = 0,
@@ -130,6 +131,7 @@ static struct gpmc_timings nand_timings = {
 	.wr_access = 30,
 	.wr_data_mux_bus = 0,
 };
+#endif //# !defined(CONFIG_MACH_UD8168_DVR) && !defined(CONFIG_MACH_UD8107_DVR)
 
 static struct gpmc_timings nand_timings_ti814x = {
 
@@ -156,7 +158,7 @@ static struct gpmc_timings nand_timings_ti814x = {
 
 static struct omap_nand_platform_data board_nand_data = {
 	.nand_setup	= NULL,
-	#ifdef CONFIG_MACH_UD8168_DVR
+	#if defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_UD8107_DVR)
 	.gpmc_t		= NULL,
 	#else
 	.gpmc_t		= &nand_timings,
