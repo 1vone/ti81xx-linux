@@ -4428,7 +4428,11 @@ void _update_fixed_divisors(void)
 void _update_data_for_dm385(void)
 {
 	/* Update osc1 rate */
+#ifdef CONFIG_MACH_UD8107_DVR
+	osc1_clkin_ck.rate = 22579000;
+#else
 	osc1_clkin_ck.rate = 27000000;
+#endif
 	/* update gmac0to1 mux sel */
 	gmac0to1_mux_out_ck.clksel = gmac0to1_385_mux_sel;
 

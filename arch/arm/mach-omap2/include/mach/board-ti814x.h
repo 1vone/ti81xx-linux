@@ -23,7 +23,7 @@
 #define VPS_SEL_TVP7002_DECODER	0
 #define VPS_SEL_SIL9135_DECODER	1
 
-#ifdef CONFIG_ARCH_TI814X
+#if defined(CONFIG_ARCH_TI814X) && !defined(CONFIG_MACH_UD8107_DVR)
 int ti814x_pcf8575_init(void);
 int ti814x_pcf8575_exit(void);
 int vps_ti814x_select_video_decoder(int vid_decoder_id);
