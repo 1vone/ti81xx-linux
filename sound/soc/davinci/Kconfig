@@ -65,7 +65,7 @@ config  SND_DM6467_SOC_EVM
 
 config SND_SOC_TVP5158_AUDIO
 	tristate "TVP5158 Audio Codec support for DaVinci DM81XX EVM"
-	depends on (SND_UD8168_SOC_DVR || SND_TI81XX_SOC_EVM) && SND_TI81XX_SOC
+	depends on (SND_TI81XX_SOC_UDDVR || SND_TI81XX_SOC_EVM) && SND_TI81XX_SOC
 
 config SND_DAVINCI_SOC_SFFSDR
 	tristate "SoC Audio support for SFFSDR"
@@ -114,9 +114,9 @@ config SND_SOC_TI81XX_HDMI
 	  Build the module for on-chip HDMI audio on TI
 	  81XX EVM
 
-config  SND_UD8168_SOC_DVR
+config SND_TI81XX_SOC_UDDVR
 	tristate "SoC Audio support for TI81XX DVR"
-	depends on SND_TI81XX_SOC && MACH_UD8168_DVR
+	depends on SND_TI81XX_SOC && (MACH_UD8168_DVR || MACH_UD8107_DVR)
 	select SND_DAVINCI_SOC_MCASP
 	select SND_SOC_TVP5158_AUDIO
 	select SND_SOC_TLV320AIC3X
@@ -124,4 +124,4 @@ config  SND_UD8168_SOC_DVR
 
 	help
 	  Say Y if you want to add support for SoC audio on TI
-	  8168 DVR
+	  81XX DVR
