@@ -27,6 +27,8 @@
 #include <linux/phy.h>
 #include <linux/gpio.h>
 #include <linux/regulator/machine.h>
+#include <linux/eeprom_uddvr.h>
+
 #ifdef CONFIG_REGULATOR_GPIO
 #include <linux/regulator/gpio-regulator.h>
 #endif
@@ -57,6 +59,7 @@
 #include "mux.h"
 #include "hsmmc.h"
 #include "board-flash.h"
+
 #include <mach/board-ti816x.h>
 
 static struct omap2_hsmmc_info mmc[] = {
@@ -264,11 +267,10 @@ static struct i2c_board_info __initdata ti816x_i2c_boardinfo1[] = {
 	},
 };
 
-
-static int __init ti816x_evm_i2c_init(void)
+static int __init ti816x_dvr_i2c_init(void)
 {
 	#ifdef CONFIG_REGULATOR_TPS40400
-	int hwver = get_dvr_hwver();		//# must get after eeprom_init()
+	int hwver = eeprom_uddvr_get_hwver();		//# must get after eeprom_init()
 	if(hwver < 0x50)					//# use not tps40400
 		ti816x_i2c_boardinfo0[2].platform_data = NULL;
 	#endif
@@ -280,33 +282,13 @@ static int __init ti816x_evm_i2c_init(void)
 	return 0;
 }
 
-static void __init ti8168_evm_init_irq(void)
+static void __init ti8168_dvr_init_irq(void)
 {
 	omap2_init_common_infrastructure();
 	omap2_init_common_devices(NULL, NULL);
 	omap_init_irq();
 	gpmc_init();
 }
-
-static u8 ti8168_iis_serializer_direction[] = {
-	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-};
-
-static struct snd_platform_data ti8168_dvr_snd_data = {
-	.tx_dma_offset	= 0x46800000,
-	.rx_dma_offset	= 0x46800000,
-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(ti8168_iis_serializer_direction),
-	.tdm_slots	= 2,
-	.serial_dir	= ti8168_iis_serializer_direction,
-	.asp_chan_q	= EVENTQ_2,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
-};
 
 static struct omap_musb_board_data musb_board_data = {
 	.interface_type		= MUSB_INTERFACE_ULPI,
@@ -394,8 +376,163 @@ static struct platform_device tvp5158_audio_device = {
 	.name	= "tvp5158-audio",
 	.id	= -1,
 };
-#endif	//# #ifdef CONFIG_SND_SOC_TI81XX_HDMI
 
+static u8 tvp5158_iis_serializer_direction[] = {
+	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+};
+
+/* TVP5158 <-> McASP0 */
+static struct snd_platform_data tvp5158_snd_data = {
+	.tx_dma_offset	= 0x46000000,
+	.rx_dma_offset	= 0x46000000,
+	.asp_chan_q	    = EVENTQ_2,
+	.clk_input_pin  = MCASP_AHCLKX_OUT,
+	.tdm_slots	    = 16, /* number of channels */
+	.op_mode	= DAVINCI_MCASP_IIS_MODE,
+	.num_serializer = ARRAY_SIZE(tvp5158_iis_serializer_direction),
+	.serial_dir	= tvp5158_iis_serializer_direction,
+	.version	= MCASP_VERSION_2,
+	.txnumevt	= 1,
+	.rxnumevt	= 1,
+};
+
+static struct resource ti81xx_mcasp0_resource[] = {
+    {
+        .name = "mcasp0",
+        .start = TI81XX_ASP0_BASE,
+        .end = TI81XX_ASP0_BASE + (SZ_1K * 12) - 1,
+        .flags = IORESOURCE_MEM,
+    },
+    /* TX event */
+    {
+        .start = TI81XX_DMA_MCASP0_AXEVT,
+        .end = TI81XX_DMA_MCASP0_AXEVT,
+        .flags = IORESOURCE_DMA,
+    },
+    /* RX event */
+    {
+        .start = TI81XX_DMA_MCASP0_AREVT,
+        .end = TI81XX_DMA_MCASP0_AREVT,
+        .flags = IORESOURCE_DMA,
+    },
+};
+
+static struct platform_device ti81xx_mcasp0_device = {
+    .name = "davinci-mcasp",
+    .id = 0,
+    .dev ={
+		.platform_data = &tvp5158_snd_data,
+	},
+    .num_resources = ARRAY_SIZE(ti81xx_mcasp0_resource),
+    .resource = ti81xx_mcasp0_resource,
+};
+#endif
+
+
+#ifdef CONFIG_SND_SOC_TLV320AIC3X
+static u8 aic3x_iis_serializer_direction[] = {
+	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+};
+
+/* McASP1 <-> AIC3101 */
+static struct snd_platform_data aic3x_snd_data = {
+	.tx_dma_offset	= 0x46800000,
+	.rx_dma_offset	= 0x46800000,
+	.op_mode	= DAVINCI_MCASP_IIS_MODE,
+	.num_serializer = ARRAY_SIZE(aic3x_iis_serializer_direction),
+	.tdm_slots	= 2,
+	.serial_dir	= aic3x_iis_serializer_direction,
+	.asp_chan_q	= EVENTQ_2,
+	.version	= MCASP_VERSION_2,
+	.txnumevt	= 1,
+	.rxnumevt	= 1,
+};
+
+static struct resource ti81xx_mcasp2_resource[] = {
+   {
+		.name = "mcasp2",
+		.start = TI81XX_ASP2_BASE,
+		.end = TI81XX_ASP2_BASE + (SZ_1K * 12) - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	/* TX event */
+	{
+		.start = TI81XX_DMA_MCASP2_AXEVT,
+		.end = TI81XX_DMA_MCASP2_AXEVT,
+		.flags = IORESOURCE_DMA,
+	},
+	/* RX event */
+	{
+		.start = TI81XX_DMA_MCASP2_AREVT,
+		.end = TI81XX_DMA_MCASP2_AREVT,
+		.flags = IORESOURCE_DMA,
+	},
+};
+
+static struct platform_device ti81xx_mcasp2_device = {
+    .name = "davinci-mcasp",
+    .id = 2,
+    .dev ={
+		.platform_data = &aic3x_snd_data,
+	},
+    .num_resources = ARRAY_SIZE(ti81xx_mcasp2_resource),
+    .resource = ti81xx_mcasp2_resource,
+};
+#endif
+
+#ifdef CONFIG_EEPROM_UDDVR
+static int __init ti8168_dvr_eeprom_init(void)
+{
+	int ret = 0;
+	
+	ret = gpio_request(EEPROM_CS, "eeprom cs");
+	if (ret) {
+		printk(KERN_ERR "Cannot request GPIO %d\n", EEPROM_CS);
+		return ret;
+	}
+	/* default-inactive */
+	gpio_direction_output(EEPROM_CS, 0);
+	
+	ret = gpio_request(EEPROM_SCLK, "eeprom clk");
+	if (ret) {
+		printk(KERN_ERR "Cannot request GPIO %d\n", EEPROM_CS);
+		return ret;
+	}
+	gpio_direction_output(EEPROM_SCLK, 0);
+
+	ret = gpio_request(EEPROM_SDO, "eeprom sdo");
+	if (ret) {
+		printk(KERN_ERR "Cannot request GPIO %d\n", EEPROM_SDO);
+		return ret;
+	}
+	gpio_direction_output(EEPROM_SDO, 0);
+	
+	ret = gpio_request(EEPROM_SDI, "eeprom sdi");
+	if (ret) {
+		printk(KERN_ERR "Cannot request GPIO %d\n", EEPROM_SDI);
+		return ret;
+	}
+	gpio_direction_input(EEPROM_SDI);
+	
+	/* 
+	 * Get dvr hardware version 
+	 * off:[0] ~ [7]->MAC0 Address
+	 * off:[8] ~ [15]->MAC1 Address
+	 * off:[16] ~ [17]->H/W Version
+	 */
+	eeprom_uddvr_set_hwver();
+	
+	printk("3-wired eeprom init done. (H/W ver:%02x)\n", eeprom_uddvr_get_hwver());
+	
+	return 0;
+}
+#endif
 
 static void __init ti8168_dvr_init(void)
 {
@@ -404,18 +541,24 @@ static void __init ti8168_dvr_init(void)
 
 	ti81xx_mux_init(board_mux);
 	omap_serial_init();
-	eeprom_init();
-	ti816x_evm_i2c_init();
+	
+	ti8168_dvr_eeprom_init();
+	ti816x_dvr_i2c_init();
 
 	#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
 	platform_device_register(&tvp5158_audio_device);
 	#endif
 
-	ti81xx_register_mcasp(0, &ti8168_dvr_snd_data);
+	platform_device_register(&ti81xx_mcasp0_device);
+	
+	#ifdef CONFIG_SND_SOC_TLV320AIC3X
+	platform_device_register(&ti81xx_mcasp2_device);
+	#endif
+	
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);
-
-	if(get_dvr_hwver() > 0x30) {
+	
+	if (eeprom_uddvr_get_hwver() > 0x30) {
 		nand_partitions = (struct mtd_partition *)&ti816x_nand_partitions_bs128;
 		nand_array_size = ARRAY_SIZE(ti816x_nand_partitions_bs128);
 	}
@@ -423,6 +566,7 @@ static void __init ti8168_dvr_init(void)
 		nand_partitions = (struct mtd_partition *)&ti816x_nand_partitions_bs256;
 		nand_array_size = ARRAY_SIZE(ti816x_nand_partitions_bs256);
 	}
+	
 	board_nand_init(nand_partitions, nand_array_size, 0, 0);
 
 	omap2_hsmmc_init(mmc);
@@ -436,7 +580,7 @@ static void __init ti8168_dvr_init(void)
 	regulator_use_dummy_regulator();
 }
 
-static int __init ti8168_evm_gpio_setup(void)
+static int __init ti8168_dvr_gpio_setup(void)
 {
 	/* GPIO-20 should be low for NOR access beyond 4KiB */
 	/*
@@ -448,9 +592,9 @@ static int __init ti8168_evm_gpio_setup(void)
 /* GPIO setup should be as subsys_initcall() as gpio driver
  * is registered in arch_initcall()
  */
-subsys_initcall(ti8168_evm_gpio_setup);
+subsys_initcall(ti8168_dvr_gpio_setup);
 
-static void __init ti8168_evm_map_io(void)
+static void __init ti8168_dvr_map_io(void)
 {
 	omap2_set_globals_ti816x();
 	ti81xx_map_common_io();
@@ -459,9 +603,9 @@ static void __init ti8168_evm_map_io(void)
 MACHINE_START(TI8168EVM, "ud8168_dvr")
 	/* Maintainer: Texas Instruments */
 	.boot_params	= 0x80000100,
-	.map_io		= ti8168_evm_map_io,
+	.map_io		= ti8168_dvr_map_io,
 	.reserve         = ti81xx_reserve,
-	.init_irq	= ti8168_evm_init_irq,
+	.init_irq	= ti8168_dvr_init_irq,
 	.init_machine	= ti8168_dvr_init,
 	.timer		= &omap_timer,
 MACHINE_END

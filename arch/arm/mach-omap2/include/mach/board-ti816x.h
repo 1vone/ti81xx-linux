@@ -56,10 +56,6 @@ static inline int vps_ti816x_set_tvp7002_filter(enum fvid2_standard standard)
 }
 #endif
 
-#ifdef CONFIG_MACH_UD8168_DVR
-int __init eeprom_init(void);
-int get_dvr_hwver(void);
-#endif
+
 
 #endif
-
