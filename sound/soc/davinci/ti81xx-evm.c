@@ -145,10 +145,10 @@ static struct snd_soc_dai_link ti81xx_mcasp_dai[] = {
 	{
 		.name = "TLV320AIC3X",
 		.stream_name = "AIC3X",
-#if defined(CONFIG_MACH_TI810XEVM) || defined(CONFIG_MACH_TI810XDVR)
+#if defined(CONFIG_MACH_TI810XEVM) || defined(CONFIG_MACH_TI810XDVR)|| defined (CONFIG_MACH_UD8107_DVR)
 		.cpu_dai_name= "davinci-mcasp.1",
 #else
-        .cpu_dai_name= "davinci-mcasp.2",
+	        .cpu_dai_name= "davinci-mcasp.2",
 #endif
 		.codec_dai_name = "tlv320aic3x-hifi",
 		.codec_name = "tlv320aic3x-codec.1-0018",
