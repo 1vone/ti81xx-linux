@@ -154,6 +154,7 @@ static struct mtd_partition ti816x_nand_partitions[] = {
 		.name           = "U-Boot",
 		.offset         = 0,    /* Offset = 0x0 */
 		.size           = 19 * NAND_BLOCK_SIZE,
+		.mask_flags     = MTD_WRITEABLE,        /* force read-only */
 	},
 	{
 		.name           = "U-Boot Env",
@@ -161,18 +162,23 @@ static struct mtd_partition ti816x_nand_partitions[] = {
 		.size           = 1 * NAND_BLOCK_SIZE,
 	},
 	{
+		.name		    = "U-Boot Logo",
+		.offset		    = MTDPART_OFS_APPEND,	/* Offset = 0x280000 */
+		.size		    = 24 * NAND_BLOCK_SIZE,
+	},
+	{
 		.name           = "Kernel",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x280000 */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x580000 */
 		.size           = 34 * NAND_BLOCK_SIZE,
 	},
 	{
 		.name           = "File System",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x6C0000 */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x9C0000 */
 		.size           = 1601 * NAND_BLOCK_SIZE,
 	},
 	{
 		.name           = "Reserved",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xCEE0000 */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xD1E0000 */
 		.size           = MTDPART_SIZ_FULL,
 	},
 };
