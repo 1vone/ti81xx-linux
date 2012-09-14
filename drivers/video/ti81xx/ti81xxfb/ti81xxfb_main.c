@@ -48,7 +48,7 @@ static int fb_mmode = 1;
 
 #define TIED_GRPX_INPUT 1
 
-#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_TI810XEVM)
+#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_TI810XEVM)|| defined(CONFIG_MACH_UD8107_DVR)
 #undef TIED_GRPX_INPUT
 #endif
 

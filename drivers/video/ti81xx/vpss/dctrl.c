@@ -3275,7 +3275,7 @@ int __init vps_dc_init(struct platform_device *pdev,
 		case HDCOMP:
 			opinfo.vencnodenum = VPS_DC_VENC_HDCOMP;
 			opinfo.afmt = VPS_DC_A_OUTPUT_COMPONENT;
-#if defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_TI810XDVR)
+#if defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
             /*set VGA as default fromat for DVR*/
             opinfo.dataformat = FVID2_DF_RGB24_888;
             opinfo.dvofmt = VPS_DC_DVOFMT_TRIPLECHAN_DISCSYNC;

@@ -45,6 +45,9 @@
 
 #include <mach/board-ti816x.h>
 #include "devices.h"
+#ifdef CONFIG_MACH_UD8168_DVR
+#include <linux/eeprom_uddvr.h>
+#endif
 
 #if defined(CONFIG_VIDEO_OMAP2) || defined(CONFIG_VIDEO_OMAP2_MODULE)
 
@@ -1873,15 +1876,15 @@ static void __init ti81xx_video_mux(void)
 		omap_mux_init_signal("vout0_r_cr0", OMAP_MUX_MODE1);
 		omap_mux_init_signal("tsi5_data", OMAP_MUX_MODE1);
 		#ifdef CONFIG_MACH_UD8168_DVR 
-		if(get_dvr_hwver() > 0x50) {/**FIX:to avoid pinmux settings of VGA to get initialized only for PG2.0**/
+ 		if(eeprom_uddvr_get_hwver() > 0x50) {/**FIX:to avoid pinmux settings of VGA to get initialized only for PG2.0**/
 			omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE2);
 			omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE2);
-		}
-		else
-		{
-			omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
-			omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);			
-		}
+ 		}
+ 		else
+ 		{
+ 			omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
+ 			omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);			
+ 		}
 		#else
 		omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
 		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);		
@@ -2285,7 +2288,7 @@ struct cpsw_slave_data cpsw_slaves[] = {
 		.slave_reg_ofs  = 0x50,
 		.sliver_reg_ofs = 0x700,
 #if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
-        .phy_id     = "0:01", // in baichuan 810X board, emac 0 is used as channel input
+	        .phy_id         = "0:01", // in baichuan 810X board, emac 0 is used as channel input
 #else
 		.phy_id		= "0:00",
 #endif
@@ -2296,7 +2299,7 @@ struct cpsw_slave_data cpsw_slaves[] = {
 		.sliver_reg_ofs = 0x740,
 #if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
 		/* in DVR_RDK, emac 1 is used as channel input */
-        .phy_id     = "0:00",
+	        .phy_id         = "0:00",
 #else
 		.phy_id		= "0:01",
 #endif
@@ -2321,7 +2324,7 @@ static struct cpsw_platform_data ti814x_cpsw_pdata = {
 	.rx_descs               = 64,
 
 #if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_TI8107_DVR)
-    .mac_control            = BIT(5)|BIT(15), /* MIIEN */
+	.mac_control            = BIT(5)|BIT(15), /* MIIEN */
 #else
 	.mac_control            = BIT(5), /* MIIEN */
 #endif
