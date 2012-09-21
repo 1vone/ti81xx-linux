@@ -33,7 +33,7 @@
 #endif
 
 #define CHANGE_FREQ		1
-#define AVERAGE_POINTS  20
+#define AVERAGE_POINTS  100
 
 /* PMIC details */
 struct tps40400_vr_pmic_info_pmic {
@@ -44,7 +44,6 @@ struct tps40400_vr_pmic_info_pmic {
 	int 			exponent;
 	struct mutex		mtx;
 	unsigned 		nominal_uV;
-	unsigned		setFlag;
 	unsigned		lastSetuV;
 };
 
@@ -77,62 +76,13 @@ static int get_data_linear(struct tps40400_vr_pmic_info_pmic *pmic, int data)
 static int tps40400_get_voltage(struct regulator_dev *dev)
 {
 	struct tps40400_vr_pmic_info_pmic *pmic = rdev_get_drvdata(dev);
-	struct i2c_client *client = pmic->client;
 	int data;
-	int ret, i,arr_sum = 0;
-	int avgdata_arr[AVERAGE_POINTS] = {0};
 
 	mutex_lock(&pmic->mtx);
 
-	if(pmic->setFlag == 1)
-	{
-		/*After Each Set_Voltage, Blindly sleeping for 100ms */
-		/*Actual wait can be calculated as follows (trim amount)*(TON_RISE)/(Vout)
-		 * Described in much detail:Section 10.1.4 of the AVS PMBus User guide*/
-		mdelay(100);
-	}
+	data = pmic->lastSetuV;
+    dprintk("%d:%s Current voltage :%d\n", __LINE__,__func__, data);
 
-	/*Taking an Avg of read_vout's
-	 * Described in much detail:Section 10.1.3 of the AVS PMBus User guide*/
-	for(i = 0; i < AVERAGE_POINTS; i++)
-	{
-	/*READ_VOUT(8Bh)*/
-	ret = i2c_smbus_read_word_data(client, PMBUS_READ_VOUT);
-	if (ret < 0) {
-		dev_err(&pmic->client->dev, "Error getting voltage\n");
-		data = ret;
-		goto out;
-	}
-
-	/* Convert the data from pmic to microvolts */
-		avgdata_arr[i] = get_data_linear(rdev_get_drvdata(dev),ret);
-
-		/*Wait for 250us before consecutive reads*/
-		udelay(250);
-	}
-	for(i = 0; i < AVERAGE_POINTS; i++)
-	{
-		arr_sum += avgdata_arr[i];
-	}
-
-	data = arr_sum/AVERAGE_POINTS;
-
-	dprintk("%d:%s Avg Current Output voltage %duV\n", __LINE__,__func__,data);
-
-	/*Dead Band mechanism to determine read result as good,
-	 * Width of the dead band kept as +/- 7.5mV, as we are doing a 20-point averaging
-	 **/
-	if(pmic->setFlag == 1)
-    {
-	    if(!((data > (pmic->lastSetuV - 7500)) && (data < (pmic->lastSetuV + 7500))))
-	    {
-		    data = pmic->lastSetuV;
-	        dprintk("%d:%s Dead-Band Applied, Output voltage set to lastSetuV:%d\n", __LINE__,__func__, data);
-		}
-		pmic->setFlag = 0;
-	}
-
-out:
 	mutex_unlock(&pmic->mtx);
 	return data;
 }
@@ -177,12 +127,16 @@ static int tps40400_set_voltage(struct regulator_dev *dev, int minuV, int maxuV)
 	if (ret < 0)
 		dev_err(&pmic->client->dev, "Error setting voltage\n");
 
-	pmic->setFlag = 1;
 	pmic->lastSetuV = minuV;
+	/* After Each Set_Voltage,wait for rise time = (trim amount)*(TON_RISE)/(Vnom)
+											- max time required is
+											= 200mV * 2.6 ms/1000mV
+											= 0.52 ms (let's wait for 1ms )*/
+	udelay(1000);
 
 	mutex_unlock(&pmic->mtx);
 
-	return 0;
+	return ret;
 }
 
 static int tps40400_list_voltage(struct regulator_dev *dev, unsigned selector)
@@ -272,9 +226,8 @@ static int __devinit tps40400_probe(struct i2c_client *i2c,
 
 	pmic->exponent = -10; /*Set this default value for TPS40400*/
 	pmic->client = i2c;
-	pmic->setFlag = 0;
-	pmic->lastSetuV = 0;
 	pmic->nominal_uV = 1000000; /* For DM8168 - nominal voltage is 1V)*/
+	pmic->lastSetuV = pmic->nominal_uV; /* set initial voltage to nominal */
 
 	mutex_init(&pmic->mtx);
 
@@ -328,7 +281,7 @@ static int __devinit tps40400_probe(struct i2c_client *i2c,
 
 	//# change PMBUS_FREQUENCY - dvr_rdk -----------------------------
 	#if CHANGE_FREQ
-	ret = i2c_smbus_write_word_data(i2c, PMBUS_FREQUENCY_SWITCH, FREQ_400K);
+	ret = i2c_smbus_write_word_data(i2c, PMBUS_FREQUENCY_SWITCH, FREQ_680K);	//# FREQ_1200K
 	if (ret < 0)
 		dev_err(&pmic->client->dev, "Error setting frequency\n");
 	#endif

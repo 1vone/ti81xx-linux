@@ -1422,18 +1422,18 @@ static inline void ti816x_ethernet_init(void) {}
 static struct ti816x_sr_sdata sr_sensor_data[] = {
 	{
 		.efuse_offs     = TI816X_SR_HVT_CNTRL_OFFSET,
-		.e2v_gain       = 0x31,
+		.e2v_gain       = 0x18,
 		.err_weight     = 0x4,
-		.err_minlimit   = 0xFD,
+		.err_minlimit   = 0xFA,
 		.err_maxlimit   = 0x2,
 		.senn_mod       = 0x1,
 		.senp_mod       = 0x1,
 	},
 	{
 		.efuse_offs     = TI816X_SR_SVT_CNTRL_OFFSET,
-		.e2v_gain       = 0x47,
+		.e2v_gain       = 0x23,
 		.err_weight     = 0x4,
-		.err_minlimit   = 0xFD,
+		.err_minlimit   = 0xFC,
 		.err_maxlimit   = 0x2,
 		.senn_mod       = 0x1,
 		.senp_mod       = 0x1,
@@ -1443,10 +1443,10 @@ static struct ti816x_sr_sdata sr_sensor_data[] = {
 static struct ti816x_sr_platform_data ti816x_sr_pdata = {
 	.vd_name                = "vdd_avs",
 	.ip_type                = 2,
-	.irq_delay              = 2000,
+	.irq_delay              = 200,
 	.no_of_vds              = 1,
 	.no_of_sens             = ARRAY_SIZE(sr_sensor_data),
-	.vstep_size_uv          = 3906,
+	.vstep_size_uv          = 7812,
 	.enable_on_init         = true,
 	.sr_sdata               = sr_sensor_data,
 };
