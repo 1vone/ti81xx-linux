@@ -350,6 +350,13 @@ config MACH_DM385EVM
 	default y
 	depends on ARCH_TI814X
 
+config MACH_TI810X_BCH_120_DVR
+	bool "TI810X DVR Module bch rev120 board"
+	depends on ARCH_TI814X
+	default n
+	help 
+		for 810X bch rev120 version hardware
+
 config MACH_TI811XEVM
 	bool "TI811X Evaluation Module"
 	default n
