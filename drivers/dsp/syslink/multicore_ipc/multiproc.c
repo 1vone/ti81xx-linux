@@ -38,6 +38,9 @@
 /* Macro to make a correct module magic number with ref_count */
 #define MULTIPROC_MAKE_MAGICSTAMP(x) ((MULTIPROC_MODULEID << 12u) | (x))
 
+/* By default this is NOT defined */
+#undef DVRRDK_VER_03_00_XX_XX
+
 /*
  *  multiproc module state object
  */
@@ -90,13 +93,48 @@ static struct multiproc_module_object ti81xx_multiproc_state = {
     .id = MULTIPROC_INVALIDID
 };
 
+/*
+    In earlier syslink, there was no processor defined as TI813x
+
+    So when using syslink with TI813x, TI814x config was used
+    and all access to DSP was blocked.
+
+    Hence below config mimiced the config used for TI814x
+
+    In newer syslink, a processor TI813x is defined.
+
+    So now below config should be changed according to actual config
+    of TI813x.
+    In TI813x DSP is not present hence processor ID's
+    change as shown below.
+*/
 static struct multiproc_module_object ti813x_multiproc_state = {
+#ifdef DVRRDK_VER_03_00_XX_XX
+/*
+    When linux kernel is used with syslink present in DVR RDK GA3.0.1 or lesser
+    DVRRDK_VER_03_00_XX_XX should be defined
+
+    More specifically for syslink version syslink_2_10_02_17 and lower
+*/
     .def_cfg.num_processors = 4,
     .def_cfg.name_list[0] = "DSP",
     .def_cfg.name_list[1] = "VIDEO-M3",
     .def_cfg.name_list[2] = "VPSS-M3",
     .def_cfg.name_list[3] = "HOST",
     .def_cfg.id = 3,
+#else
+/*
+    When linux kernel is used with syslink present in DVR RDK GA3.50 or higher
+    DVRRDK_VER_03_00_XX_XX should be undefined
+
+    More specifically for syslink version syslink_2_20_02_20 and higher
+*/
+    .def_cfg.num_processors = 3,
+    .def_cfg.name_list[0] = "VIDEO-M3",
+    .def_cfg.name_list[1] = "VPSS-M3",
+    .def_cfg.name_list[2] = "HOST",
+    .def_cfg.id = 2,
+#endif
     .id = MULTIPROC_INVALIDID
 };
 

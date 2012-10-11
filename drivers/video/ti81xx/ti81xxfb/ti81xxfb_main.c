@@ -48,8 +48,9 @@ static int fb_mmode = 1;
 
 #undef TIED_GRPX_INPUT
 
-#if defined(CONFIG_MACH_TI8148EVM)
-#define TIED_GRPX_INPUT 1
+/* ONLY enable TIED GRPX INPUT for TI814X platform */
+#if ( defined(CONFIG_MACH_TI814XEVM) || defined(CONFIG_MACH_TI814XDVR) ) && !defined(CONFIG_MACH_TI810XEVM) && !defined(CONFIG_MACH_TI810XDVR)
+#define TIED_GRPX_INPUT
 #endif
 
 #ifdef DEBUG
@@ -1741,6 +1742,9 @@ static struct platform_driver ti81xxfb_driver = {
 
 static int __init ti81xxfb_init(void)
 {
+    #ifdef TIED_GRPX_INPUT
+    printk( " [FBDEV] IMPORTANT: Tied fb0+fb1 GRPX is ENABLED !!!\n");
+    #endif
 
 	TFBDBG("ti81xxfb_init\n");
 	if (platform_driver_register(&ti81xxfb_driver)) {
