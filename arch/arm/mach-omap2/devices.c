@@ -1038,7 +1038,9 @@ static inline void omap2_mmc_mux(struct omap_mmc_platform_data *mmc_controller,
 	}
 
 	if (cpu_is_ti816x()) {
+		#ifndef CONFIG_MACH_UD8168_DVR
 		omap_mux_init_signal("mmc_pow", OMAP_PULL_ENA);
+		#endif
 		omap_mux_init_signal("mmc_clk", OMAP_PIN_OUTPUT);
 		omap_mux_init_signal("mmc_cmd", OMAP_PULL_UP);
 		omap_mux_init_signal("mmc_dat0", OMAP_PULL_UP);
@@ -1411,6 +1413,41 @@ static inline void ti816x_ethernet_init(void) {}
  * Don't forgot to change the step size in platform data structure,
  * ti816x_sr_pdata.
  */
+#ifdef CONFIG_REGULATOR_TPS40400
+
+static struct ti816x_sr_sdata sr_sensor_data[] = {
+	{
+		.efuse_offs     = TI816X_SR_HVT_CNTRL_OFFSET,
+		.e2v_gain       = 0x31,
+		.err_weight     = 0x4,
+		.err_minlimit   = 0xFD,
+		.err_maxlimit   = 0x2,
+		.senn_mod       = 0x1,
+		.senp_mod       = 0x1,
+	},
+	{
+		.efuse_offs     = TI816X_SR_SVT_CNTRL_OFFSET,
+		.e2v_gain       = 0x47,
+		.err_weight     = 0x4,
+		.err_minlimit   = 0xFD,
+		.err_maxlimit   = 0x2,
+		.senn_mod       = 0x1,
+		.senp_mod       = 0x1,
+	},
+};
+
+static struct ti816x_sr_platform_data ti816x_sr_pdata = {
+	.vd_name                = "vdd_avs",
+	.ip_type                = 2,
+	.irq_delay              = 2000,
+	.no_of_vds              = 1,
+	.no_of_sens             = ARRAY_SIZE(sr_sensor_data),
+	.vstep_size_uv          = 3906,
+	.enable_on_init         = true,
+	.sr_sdata               = sr_sensor_data,
+};
+
+#else
 static struct ti816x_sr_sdata sr_sensor_data[] = {
 	{
 		.efuse_offs	= TI816X_SR_HVT_CNTRL_OFFSET,
@@ -1442,6 +1479,7 @@ static struct ti816x_sr_platform_data ti816x_sr_pdata = {
 	.enable_on_init		= true,
 	.sr_sdata		= sr_sensor_data,
 };
+#endif
 
 static struct resource ti816x_sr_resources[] = {
 	{
@@ -2828,7 +2866,7 @@ static struct platform_device ti81xx_mcasp_device = {
 	.name = "davinci-mcasp",
 };
 
-#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_EVM) || defined(CONFIG_SND_UD8168_SOC_DVR)
 static u8 tvp5158_iis_serializer_direction[] = {
 	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
@@ -2880,8 +2918,18 @@ static struct platform_device ti81xx_mcasp0_device = {
 	.resource = ti81xx_mcasp0_resource,
 };
 #endif
+
 void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 {
+#if defined(CONFIG_SND_UD8168_SOC_DVR)
+	ti81xx_mcasp_device.id = 2;
+	ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
+	ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
+	ti81xx_mcasp_device.dev.platform_data = pdata;
+
+	platform_device_register(&ti81xx_mcasp_device);
+	platform_device_register(&ti81xx_mcasp0_device);
+#else
 	if (machine_is_ti8168evm() || machine_is_ti8148evm()
 				|| machine_is_ti811xevm()) {
 		ti81xx_mcasp_device.id = 2;
@@ -2903,6 +2951,7 @@ void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 
 #if defined(CONFIG_SND_TI81XX_SOC_EVM)
 		platform_device_register(&ti81xx_mcasp0_device);
+#endif
 #endif
 }
 #endif
@@ -3151,7 +3200,9 @@ static int __init omap2_init_devices(void)
 	}
 
 	ti81xx_ethernet_init();
+#ifndef CONFIG_MACH_UD8168_DVR
 	ti81xx_init_pcie();
+#endif
 	ti81xx_register_edma();
 	ti81xx_init_pcm();
 	ti816x_sr_init();
