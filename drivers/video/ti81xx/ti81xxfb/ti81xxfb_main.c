@@ -46,10 +46,10 @@ static char *def_vram;
 /*normal mode*/
 static int fb_mmode = 1;
 
-#define TIED_GRPX_INPUT 1
-
-#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_TI810XEVM)|| defined(CONFIG_MACH_UD8107_DVR)
 #undef TIED_GRPX_INPUT
+
+#if defined(CONFIG_MACH_TI8148EVM)
+#define TIED_GRPX_INPUT 1
 #endif
 
 #ifdef DEBUG
