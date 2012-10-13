@@ -91,7 +91,7 @@ static struct multiproc_module_object ti81xx_multiproc_state = {
 };
 
 static struct multiproc_module_object ti813x_multiproc_state = {
-    .def_cfg.num_processors = 3,
+    .def_cfg.num_processors = 4,
     .def_cfg.name_list[0] = "DSP",
     .def_cfg.name_list[1] = "VIDEO-M3",
     .def_cfg.name_list[2] = "VPSS-M3",

@@ -326,6 +326,10 @@ config MACH_TI8148EVM
 	default y
 	depends on ARCH_TI814X
 
+config MACH_TI814XDVR
+	bool "TI8148 DVR Module"
+	default n
+	depends on ARCH_TI814X
 config MACH_TI810XEVM
 	bool "TI810X Evaluation Module"
 	depends on ARCH_TI814X
