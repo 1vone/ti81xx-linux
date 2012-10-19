@@ -2299,7 +2299,7 @@ struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs  = 0x50,
 		.sliver_reg_ofs = 0x700,
-#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
+#if (defined(CONFIG_MACH_TI810XDVR) && !defined(CONFIG_MACH_TI810X_BCH_120_DVR)) || defined(CONFIG_MACH_UD8107_DVR)
 	        .phy_id         = "0:01", // in baichuan 810X board, emac 0 is used as channel input
 #else
 		.phy_id		= "0:00",
@@ -2309,7 +2309,7 @@ struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs  = 0x90,
 		.sliver_reg_ofs = 0x740,
-#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
+#if (defined(CONFIG_MACH_TI810XDVR) && !defined(CONFIG_MACH_TI810X_BCH_120_DVR)) || defined(CONFIG_MACH_UD8107_DVR)
 		/* in DVR_RDK, emac 1 is used as channel input */
 	        .phy_id         = "0:00",
 #else
@@ -2470,12 +2470,14 @@ void ti814x_cpsw_init(void)
 			(cpu_is_ti814x() && omap_rev() > TI8148_REV_ES1_0))) 
 		cpsw_slaves[0].phy_id = "0:01";
 
-#if defined(CONFIG_MACH_TI810XDVR) || defined(CONFIG_MACH_UD8107_DVR)
+#if ((defined(CONFIG_MACH_TI810XDVR)&& !defined(CONFIG_MACH_TI810X_BCH_120_DVR)) \
+    || defined(CONFIG_MACH_UD8107_DVR))
+        
         cpsw_slaves[0].phy_id = "0:01";
         cpsw_slaves[1].phy_id = "0:00";
-#endif 
+#endif
 
-	if (cpu_is_ti811x()) {
+        if (cpu_is_ti811x()) {
 		cpsw_slaves[0].slave_reg_ofs		= 0x208;
 		cpsw_slaves[0].sliver_reg_ofs		= 0xd80;
 		cpsw_slaves[1].slave_reg_ofs		= 0x300;
@@ -2519,7 +2521,71 @@ static void ti81xx_ethernet_init(void)
 #ifdef CONFIG_MACH_UD8107_DVR
 #undef SATA_INTERNAL_20MHz		
 #endif
+#ifdef CONFIG_MACH_TI810X_BCH_120_DVR
+//On 8107 beta-2 board, we'll use the 20Mhz osc to generate 
+// 100M Sata clock, here we cahnge the PLL to create it.
+static inline void ti814x_sata_pllcfg(void)
+{
+	if (cpu_is_dm385()) {
+		/* On DM385 SATA1 PLL must be enabled first*/
+		/* set sata 100MHz source */
+		omap_ctrl_writel(0x80000004, TI813X_CONTROL_SATA1_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 100 MHz Operation) */
+		omap_ctrl_writel(0xC12C003C, TI813X_CONTROL_SATA1_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI813X_CONTROL_SATA1_PLLCFG3);
+		udelay(2000);
+		/* wait for bias to be stable */
+		omap_ctrl_writel(0x80000014, TI813X_CONTROL_SATA1_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x80000016, TI813X_CONTROL_SATA1_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 Replaced 0xC00000016 to 0x40000016 for 100MHz
+		* Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0xC0000016, TI813X_CONTROL_SATA1_PLLCFG0);
+		udelay(2000);
 
+		/* cfgpll0 Replaced 0xC0007077 with 0x40007077 for
+		* 100MHz Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0xC0007077, TI813X_CONTROL_SATA1_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI813X_CONTROL_SATA1_PLLSTATUS) & 0x1))
+			cpu_relax();
+	}
+	if (cpu_is_ti814x() || cpu_is_dm385()) {
+		/* Configure SATA0 PLL -applies for TI814x/TI813x*/
+		omap_ctrl_writel(0x80000004, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 100 MHz Operation) */
+		omap_ctrl_writel(0xC12C003C, TI814X_CONTROL_SATA_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_SATA_PLLCFG3);
+		udelay(2000);
+		/* wait for bias to be stable */
+		omap_ctrl_writel(0x80000014, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x80000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 Replaced 0xC00000016 to 0x40000016 for 100MHz
+		* Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0xC0000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(2000);
+
+		/* cfgpll0 Replaced 0xC0007077 with 0x40007077 for
+		* 100MHz Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0xC0007077, TI814X_CONTROL_SATA_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_SATA_PLLSTATUS) & 0x1))
+			cpu_relax();
+	}
+}
+
+#else
 static inline void ti814x_sata_pllcfg(void)
 {
 	if (!cpu_is_ti814x())
@@ -2579,6 +2645,51 @@ static inline void ti814x_sata_pllcfg(void)
 	}
 
 }
+#endif
+
+#ifdef CONFIG_MACH_TI810X_BCH_120_DVR
+static inline void ti814x_pcie_pllcfg(void)
+{
+
+	/* TODO: Add bitfield macros for following */
+	//omap_ctrl_writel(0x00000000, TI814X_SERDES_REFCLK_CTL);
+	omap_ctrl_writel(0x00000002, TI814X_SERDES_REFCLK_CTL);
+	omap_ctrl_writel(0x80000000, TI814X_CONTROL_PCIE_PLLCFG0);
+	//omap_ctrl_writel(0x4064002C, TI814X_CONTROL_PCIE_PLLCFG1);
+	omap_ctrl_writel(0xC064003C, TI814X_CONTROL_PCIE_PLLCFG1);
+	omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG2);
+	omap_ctrl_writel(0x004008E0, TI814X_CONTROL_PCIE_PLLCFG3);
+	omap_ctrl_writel(0x0000609C, TI814X_CONTROL_PCIE_PLLCFG4);
+
+	/* Configure SERDES misc bits - values as is from h/w */
+	if (omap_rev() > TI8148_REV_ES1_0)
+		omap_ctrl_writel(0x0000039E,
+				TI814X_CONTROL_PCIE_MISCCFG);
+	else
+		omap_ctrl_writel(0x00000E7B, TI814X_CONTROL_SMA0);
+
+	udelay(50);
+	omap_ctrl_writel(0x80000004, TI814X_CONTROL_PCIE_PLLCFG0);
+
+	udelay(50);
+	omap_ctrl_writel(0x80000014, TI814X_CONTROL_PCIE_PLLCFG0);
+
+	udelay(50);
+	omap_ctrl_writel(0x80000016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+	udelay(50);
+	omap_ctrl_writel(0xb0000016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+	udelay(50);
+	omap_ctrl_writel(0xF0007016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+	udelay(200);
+	omap_ctrl_writel(0xF0007017, TI814X_CONTROL_PCIE_PLLCFG0);
+
+	while (!(omap_ctrl_readl(TI814X_CONTROL_PCIE_PLLSTATUS) & 0x1))
+		cpu_relax();
+}
+#else //CONFIG_MACH_TI810X_BCH_120_DVR
 
 static inline void ti814x_pcie_pllcfg(void)
 {
@@ -2628,6 +2739,8 @@ static inline void ti814x_pcie_pllcfg(void)
 			cpu_relax();
 	}
 }
+#endif //CONFIG_MACH_TI810X_BCH_120_DVR
+
 #endif
 
 #if defined(CONFIG_SATA_AHCI_PLATFORM) || \
@@ -3269,6 +3382,17 @@ static int __init ti810x_dvr_gpio_init(void)
 	return 0;
 }
 #endif
+#ifdef CONFIG_MACH_TI810X_BCH_120_DVR
+static inline void ti814x_init_pulse(void)
+{
+	void __iomem * ti81xx_prmbase = ioremap(0x48180000, SZ_8K);
+	if(ti81xx_prmbase != NULL)
+	{
+		__raw_writel(0x10ff,ti81xx_prmbase + 0xa4); 
+	}
+	iounmap(ti81xx_prmbase);
+}
+#endif
 
 static int __init omap2_init_devices(void)
 {
@@ -3324,6 +3448,9 @@ static int __init omap2_init_devices(void)
 #ifdef CONFIG_MACH_UD8107_DVR
 	ti810x_dvr_mux_int();
 	ti810x_dvr_gpio_init();
+#endif
+#ifdef CONFIG_MACH_TI810X_BCH_120_DVR
+    ti814x_init_pulse();
 #endif
 
 	return 0;

@@ -18,6 +18,7 @@
 #include <linux/memblock.h>
 
 #include <asm/mach/map.h>
+#include <asm/setup.h>
 
 #include <plat/common.h>
 #include <plat/board.h>
@@ -31,7 +32,6 @@
 
 struct omap_board_config_kernel *omap_board_config;
 int omap_board_config_size;
-
 static const void *get_config(u16 tag, size_t len, int skip, size_t *len_out)
 {
 	struct omap_board_config_kernel *kinfo = NULL;
@@ -66,11 +66,33 @@ const void *omap_get_var_config(u16 tag, size_t *len)
 }
 EXPORT_SYMBOL(omap_get_var_config);
 
+static void __init ti81xx_mem_check(void)
+{
+	int i;
+	unsigned long size;
+	/*this function is to make sure that early
+		parameter "mem" is on 4MB alignment*/
+	for (i = 0; i < meminfo.nr_banks; i++) {
+		struct membank *bank = &meminfo.bank[i];
+		if ((bank->size & (SZ_4M - 1) ) ||
+		    ( bank->start & (SZ_4M - 1))) {
+			size = (bank->size >> 20);
+			pr_err("%s: memory section %ldM@0x%lx \
+					is not 4MB alignment\n",
+				__func__, size, bank->start);
+			BUG_ON(1);
+		}
+	}
+}
+
 void  __init ti81xx_reserve(void)
 {
 	/* Reserve 1MB for strongly ordered mapping for dram barrier */
 	extern phys_addr_t dram_sync_phys;
 	u32 size = ALIGN(PAGE_SIZE, SZ_1M);
+
+	/*mem parameter check*/
+	ti81xx_mem_check();
 
 	dram_sync_phys = memblock_alloc(size, SZ_1M);
 
