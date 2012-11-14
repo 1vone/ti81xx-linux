@@ -138,21 +138,21 @@ static struct gpmc_timings nand_timings_ti814x = {
 	.sync_clk = 0,
 
 	.cs_on = 0,
-	.cs_rd_off = 31,
-	.cs_wr_off = 31,
+	.cs_rd_off = 15,
+	.cs_wr_off = 15,
 
 	.adv_on = 5,
-	.adv_rd_off = 21,
+	.adv_rd_off = 10,
 	.adv_wr_off = 31,
 
-	.we_off = 26,
-	.oe_off = 42,
+	.we_off = 13,
+	.oe_off = 21,
 
-	.access = 47,
-	.rd_cycle = 63,
-	.wr_cycle = 63,
+	.access = 24,
+	.rd_cycle = 32,
+	.wr_cycle = 32,
 
-	.wr_access = 26,
+	.wr_access = 13,
 	.wr_data_mux_bus = 0,
 };
 
@@ -193,8 +193,10 @@ __init board_nand_init(struct mtd_partition *nand_parts,
 		 * For TI814x, the clock rate is different (110MHz).
 		 * Hence, different timings are used.
 		 */
+               #if !defined(CONFIG_MACH_UD8168_DVR) && !defined(CONFIG_MACH_UD8107_DVR)
 		if (cpu_is_ti814x())
 			board_nand_data.gpmc_t = &nand_timings_ti814x;
+               #endif
 	}
 
 	gpmc_nand_init(&board_nand_data);
