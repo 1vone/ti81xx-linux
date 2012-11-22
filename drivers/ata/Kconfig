@@ -57,6 +57,10 @@ config SATA_PMP
 	  This option adds support for SATA Port Multipliers
 	  (the SATA version of an ethernet hub, or SAS expander).
 
+config CONFIG_SATA_MARVELL_PMP_UDDVR
+	bool "SATA Marvell Port Multiplier"
+	default y
+
 comment "Controllers with non-SFF native interface"
 
 config SATA_AHCI

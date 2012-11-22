@@ -769,6 +769,7 @@ CONFIG_ATA=y
 # CONFIG_ATA_NONSTANDARD is not set
 CONFIG_ATA_VERBOSE_ERROR=y
 CONFIG_SATA_PMP=y
+CONFIG_SATA_MARVELL_PMP_UDDVR=y
 
 #
 # Controllers with non-SFF native interface

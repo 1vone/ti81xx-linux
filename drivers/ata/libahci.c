@@ -1100,7 +1100,8 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
 
 	writel(1 << port_no, mmio + HOST_IRQ_STAT);
 
-	#if 1	//# marvell patch
+	#ifdef CONFIG_SATA_MARVELL_PMP_UDDVR
+	/** marvell patch **/
 	/* [MRVL] start -- port PHYCR(0x78H), field RxCDR, bit[15:13] offset */
 	tmp = readl( port_mmio + 0x78);
 	tmp = tmp & 0xFFFF1FFF;
@@ -1162,7 +1163,6 @@ static unsigned int ahci_dev_classify(struct ata_port *ap)
 	return ata_dev_classify(&tf);
 }
 
-//# patch for timeout issue
 static u32 saved_cmd_slot[4];
 
 static void ahci_fill_cmd_slot(struct ahci_port_priv *pp, unsigned int tag,
@@ -1336,7 +1336,6 @@ int ahci_check_ready(struct ata_link *link)
 }
 EXPORT_SYMBOL_GPL(ahci_check_ready);
 
-#define AHCI_RETRY_COUNT       (10)
 static int ahci_softreset(struct ata_link *link, unsigned int *class,
 			  unsigned long deadline)
 {
@@ -1349,20 +1348,6 @@ static int ahci_softreset(struct ata_link *link, unsigned int *class,
 	if (ret && pmp)
 		return ahci_do_softreset(link, class, 0, deadline,
 							ahci_check_ready);
-
-	/* Some of the Gen 3 devices do not come up in one soft_reset */
-	if (ret && !pmp) {
-		int i = 0;
-		while (i++ < AHCI_RETRY_COUNT) {
-			ret = ahci_do_softreset(link, class, 0, deadline,
-				ahci_check_ready);
-			if (!ret)
-				break;
-		}
-		if (i == AHCI_RETRY_COUNT)
-			printk(KERN_EMERG "AHCI: SRST failed after retries\n");
-	}
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(ahci_do_softreset);
@@ -1438,19 +1423,6 @@ static int ahci_hardreset(struct ata_link *link, unsigned int *class,
 
 	rc = sata_link_hardreset(link, timing, deadline, &online,
 				 ahci_check_ready);
-
-	/* Some of the Gen 3 devices do not come up in one hard_reset */
-	if (!online) {
-		int i = 0;
-		while (i++ < AHCI_RETRY_COUNT) {
-			rc = sata_link_hardreset(link, timing, deadline,
-				&online, ahci_check_ready);
-			if (online)
-				break;
-		}
-		if (i == AHCI_RETRY_COUNT)
-			printk(KERN_EMERG "AHCI: link down after retries\n");
-	}
 
 	ahci_start_engine(ap);
 
