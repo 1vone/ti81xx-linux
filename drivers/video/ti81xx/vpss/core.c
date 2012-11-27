@@ -38,7 +38,7 @@
 #include <linux/vmalloc.h>
 
 #include "core.h"
-
+#include "dc.h"
 #define VPS_DRIVER_NAME  "vpss"
 
 
@@ -62,7 +62,12 @@ static int vps_probe(struct platform_device *pdev)
 {
 	int r;
 	VPSSDBG("cpu version 0x%x\n", omap_rev());
-	v_pdata = pdev->dev.platform_data;
+	v_pdata = pdev->dev.platform_data;	
+	/*reset the HDMI CLOCK MUX to zero, which was set by bootlogo */
+	if (v_pdata->cpu != CPU_DM816X)
+		omap_writel((omap_readl(TI814X_PLL_BASE + \
+		    DM814X_PLL_CLOCK_SOURCE) & (~1)),
+			TI814X_PLL_BASE + DM814X_PLL_CLOCK_SOURCE);
 	r = vps_sbuf_init(pdev, def_sbaddr, def_sbsize);
 	if (r) {
 		VPSSERR("failed to allocate share buffer\n");
