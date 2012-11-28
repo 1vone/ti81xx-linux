@@ -291,7 +291,6 @@ __u32 hdmi_get_audio_format(__u8 *edid, struct audio_format *format)
 			format->length = HDMI_AUDIO_FORMAT_MAX_LENGTH * 3;
 		else
 			format->length = length;
-
 		i = 0;
 		for (j = 1 ; j <= format->length ; j++) {
 			if (j%3 == 1) {
