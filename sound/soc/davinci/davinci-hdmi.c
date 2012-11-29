@@ -77,6 +77,13 @@ static const struct audio_fs_n *get_audio_fs_n_val(u32 rate)
  */
 static int hdmi_acr_mode(void)
 {
+    /* DVR RDK - Force SW CTS mode for 814x / 810x as sysclk issue is still present */
+    if (!cpu_is_ti816x()) 
+    {
+        printk (KERN_ERR "*** Forcing SW CTS!\n");
+        return CTS_MODE_SW;
+    }
+
 #ifdef HDMI_FORCE_SW_ACR
 	return CTS_MODE_SW;
 #else

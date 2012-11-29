@@ -22,6 +22,8 @@
 #include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/regulator/machine.h>
+#include <linux/clk.h>
+#include <linux/err.h>
 #include <linux/eeprom_uddvr.h>
 
 #include <mach/hardware.h>
@@ -171,6 +173,34 @@ static struct platform_device *ti81xx_hdmi_devices[] __initdata = {
 	&ti81xx_hdmi_audio_device,
 	&ti81xx_hdmi_codec_device,
 };
+/*
+ * HDMI Audio Auto CTS MCLK configuration.
+ * sysclk20, sysclk21, sysclk21 and CLKS(external)
+ * setting sysclk20 as the parent of hdmi_i2s_ck
+ * ToDo:
+ */
+void __init ti813x_hdmi_clk_init(void)
+{
+	int ret = 0;
+	struct clk *parent, *child;
+
+	/* modify the clk name to choose diff clk*/
+	parent = clk_get(NULL, "sysclk20_ck");
+	if (IS_ERR(parent))
+		pr_err("Unable to get [sysclk20_ck] clk\n");
+
+	child = clk_get(NULL, "hdmi_i2s_ck");
+	if (IS_ERR(child))
+		pr_err("Unable to get [hdmi_i2s_ck] clk\n");
+
+	ret = clk_set_parent(child, parent);
+	if (ret < 0)
+		pr_err("Unable to set parent clk [hdmi_i2s_ck]\n");
+
+	clk_put(child);
+	clk_put(parent);
+	pr_debug("{{HDMI Audio MCLK setup completed}}\n");
+}
 #endif
 
 #ifdef CONFIG_SND_SOC_TVP5158_AUDIO
@@ -253,6 +283,8 @@ static struct snd_platform_data aic3x_snd_data = {
 	.version	= MCASP_VERSION_2,
 	.txnumevt	= 1,
 	.rxnumevt	= 1,
+	/* McASP21_AHCLKX out to feed CODEC CLK*/
+	.clk_input_pin	= MCASP_AHCLKX_OUT,
 };
 
 static struct resource ti81xx_mcasp1_resource[] = {
@@ -364,6 +396,8 @@ static void __init ti810x_dvr_init(void)
 	#endif
 	
 	#ifdef CONFIG_SND_SOC_TI81XX_HDMI
+	/* hdmi mclk setup */
+	ti813x_hdmi_clk_init();
 	platform_add_devices(ti81xx_hdmi_devices, ARRAY_SIZE(ti81xx_hdmi_devices));
 	#endif
 	

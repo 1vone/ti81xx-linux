@@ -372,119 +372,34 @@ void __init ti8168_hdmi_mclk_init(void)
 }
 
 #ifdef CONFIG_SND_SOC_TVP5158_AUDIO
-static struct platform_device tvp5158_audio_device = {
-	.name	= "tvp5158-audio",
-	.id	= -1,
-};
-
-static u8 tvp5158_iis_serializer_direction[] = {
-	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-};
-
-/* TVP5158 <-> McASP0 */
-static struct snd_platform_data tvp5158_snd_data = {
-	.tx_dma_offset	= 0x46000000,
-	.rx_dma_offset	= 0x46000000,
-	.asp_chan_q	    = EVENTQ_2,
-	.clk_input_pin  = MCASP_AHCLKX_OUT,
-	.tdm_slots	    = 16, /* number of channels */
-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(tvp5158_iis_serializer_direction),
-	.serial_dir	= tvp5158_iis_serializer_direction,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
-};
-
-static struct resource ti81xx_mcasp0_resource[] = {
-    {
-        .name = "mcasp0",
-        .start = TI81XX_ASP0_BASE,
-        .end = TI81XX_ASP0_BASE + (SZ_1K * 12) - 1,
-        .flags = IORESOURCE_MEM,
-    },
-    /* TX event */
-    {
-        .start = TI81XX_DMA_MCASP0_AXEVT,
-        .end = TI81XX_DMA_MCASP0_AXEVT,
-        .flags = IORESOURCE_DMA,
-    },
-    /* RX event */
-    {
-        .start = TI81XX_DMA_MCASP0_AREVT,
-        .end = TI81XX_DMA_MCASP0_AREVT,
-        .flags = IORESOURCE_DMA,
-    },
-};
-
-static struct platform_device ti81xx_mcasp0_device = {
-    .name = "davinci-mcasp",
-    .id = 0,
-    .dev ={
-		.platform_data = &tvp5158_snd_data,
-	},
-    .num_resources = ARRAY_SIZE(ti81xx_mcasp0_resource),
-    .resource = ti81xx_mcasp0_resource,
-};
-#endif
-
-
-#ifdef CONFIG_SND_SOC_TLV320AIC3X
-static u8 aic3x_iis_serializer_direction[] = {
+static u8 ti8168_iis_serializer_direction[] = {
 	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
 };
 
-/* McASP1 <-> AIC3101 */
-static struct snd_platform_data aic3x_snd_data = {
+static struct snd_platform_data ti8168_dvr_snd_data = {
 	.tx_dma_offset	= 0x46800000,
 	.rx_dma_offset	= 0x46800000,
 	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(aic3x_iis_serializer_direction),
+	.num_serializer = ARRAY_SIZE(ti8168_iis_serializer_direction),
+    .clk_input_pin  = MCASP_AHCLKX_OUT,
 	.tdm_slots	= 2,
-	.serial_dir	= aic3x_iis_serializer_direction,
+	.serial_dir	= ti8168_iis_serializer_direction,
 	.asp_chan_q	= EVENTQ_2,
 	.version	= MCASP_VERSION_2,
 	.txnumevt	= 1,
 	.rxnumevt	= 1,
 };
 
-static struct resource ti81xx_mcasp2_resource[] = {
-   {
-		.name = "mcasp2",
-		.start = TI81XX_ASP2_BASE,
-		.end = TI81XX_ASP2_BASE + (SZ_1K * 12) - 1,
-		.flags = IORESOURCE_MEM,
-	},
-	/* TX event */
-	{
-		.start = TI81XX_DMA_MCASP2_AXEVT,
-		.end = TI81XX_DMA_MCASP2_AXEVT,
-		.flags = IORESOURCE_DMA,
-	},
-	/* RX event */
-	{
-		.start = TI81XX_DMA_MCASP2_AREVT,
-		.end = TI81XX_DMA_MCASP2_AREVT,
-		.flags = IORESOURCE_DMA,
-	},
-};
-
-static struct platform_device ti81xx_mcasp2_device = {
-    .name = "davinci-mcasp",
-    .id = 2,
-    .dev ={
-		.platform_data = &aic3x_snd_data,
-	},
-    .num_resources = ARRAY_SIZE(ti81xx_mcasp2_resource),
-    .resource = ti81xx_mcasp2_resource,
+static struct platform_device tvp5158_audio_device = {
+	.name	= "tvp5158-audio",
+	.id	= -1,
 };
 #endif
+
+
 
 #ifdef CONFIG_EEPROM_UDDVR
 static int __init ti8168_dvr_eeprom_init(void)
@@ -549,12 +464,7 @@ static void __init ti8168_dvr_init(void)
 	platform_device_register(&tvp5158_audio_device);
 	#endif
 
-	platform_device_register(&ti81xx_mcasp0_device);
-	
-	#ifdef CONFIG_SND_SOC_TLV320AIC3X
-	platform_device_register(&ti81xx_mcasp2_device);
-	#endif
-	
+	ti81xx_register_mcasp(0, &ti8168_dvr_snd_data);
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);
 	

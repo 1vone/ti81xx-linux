@@ -3018,7 +3018,7 @@ static struct platform_device ti81xx_mcasp_device = {
 	.name = "davinci-mcasp",
 };
 
-#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_EVM) || defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_UD8107_DVR)
 static u8 tvp5158_iis_serializer_direction[] = {
 	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
@@ -3073,6 +3073,15 @@ static struct platform_device ti81xx_mcasp0_device = {
 
 void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 {
+#if defined(CONFIG_MACH_UD8168_DVR)
+	ti81xx_mcasp_device.id = 2;
+	ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
+	ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
+	ti81xx_mcasp_device.dev.platform_data = pdata;
+
+	platform_device_register(&ti81xx_mcasp_device);
+	platform_device_register(&ti81xx_mcasp0_device);
+#else
 	if (machine_is_ti8168evm() || machine_is_ti8148evm()
 				|| machine_is_ti811xevm()) {
 		ti81xx_mcasp_device.id = 2;
@@ -3092,8 +3101,9 @@ void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
 	ti81xx_mcasp_device.dev.platform_data = pdata;
 	platform_device_register(&ti81xx_mcasp_device);
 
-#if defined(CONFIG_SND_TI81XX_SOC_EVM)
+#if defined(CONFIG_SND_TI81XX_SOC_EVM) || defined(CONFIG_MACH_UD8107_DVR)
 		platform_device_register(&ti81xx_mcasp0_device);
+#endif
 #endif
 }
 #endif
