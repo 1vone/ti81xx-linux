@@ -49,7 +49,7 @@ static int fb_mmode = 1;
 #undef TIED_GRPX_INPUT
 
 /* ONLY enable TIED GRPX INPUT for TI814X platform */
-#if ( defined(CONFIG_MACH_TI814XEVM) || defined(CONFIG_MACH_TI814XDVR) ) && !defined(CONFIG_MACH_TI810XEVM) && !defined(CONFIG_MACH_TI810XDVR)
+#if ( defined(CONFIG_MACH_TI8148EVM) || defined(CONFIG_MACH_TI814XDVR) ) && !defined(CONFIG_MACH_TI810XEVM) && !defined(CONFIG_MACH_TI810XDVR)
 #define TIED_GRPX_INPUT
 #endif
 
@@ -645,6 +645,7 @@ static void set_fb_fix(struct fb_info *fbi)
 	fbi->screen_base = (char __iomem *) ti81xxfb_get_fb_vaddr(tfbi);
 	fix->line_length = (var->xres_virtual * bpp >> 3);
 	//Added to change line_length
+
 #ifdef TIED_GRPX_INPUT
 	if(tfbi->idx != 0)
 	{
