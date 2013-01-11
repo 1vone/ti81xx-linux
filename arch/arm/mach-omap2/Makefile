@@ -264,6 +264,9 @@ obj-$(CONFIG_MACH_DM385EVM)		+= board-dm385evm.o \
 obj-$(CONFIG_MACH_TI811XEVM)		+= board-ti811xevm.o \
 					   hsmmc.o \
 					   board-flash.o
+obj-$(CONFIG_MACH_DM385IPNC)		+= board-dm385ipnc.o \
+					   hsmmc.o \
+					   board-flash.o
 obj-$(CONFIG_MACH_TI8168EVM)		+= board-ti8168evm.o \
 					   hsmmc.o \
 					   board-flash.o

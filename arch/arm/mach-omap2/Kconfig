@@ -341,6 +341,11 @@ config MACH_TI811XEVM
 	default n
 	depends on ARCH_TI814X
 
+config MACH_DM385IPNC
+	bool "DM385 IPNetCam Module"
+	default n
+	depends on ARCH_TI814X
+
 config MACH_TI8168EVM
 	bool "TI8168 Evaluation Module"
 	default y
