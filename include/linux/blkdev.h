@@ -758,6 +758,7 @@ static inline unsigned int blk_rq_cur_sectors(const struct request *rq)
 /*
  * Request issue related functions.
  */
+#define blk_fs_request(rq) ((rq)->cmd_type == REQ_TYPE_FS)
 extern struct request *blk_peek_request(struct request_queue *q);
 extern void blk_start_request(struct request *rq);
 extern struct request *blk_fetch_request(struct request_queue *q);
