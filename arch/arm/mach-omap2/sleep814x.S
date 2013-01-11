@@ -127,13 +127,13 @@ ENDPROC(ti81xx_do_wfi_sync)
  * This routine is supposed to be executed from internal RAM and expects the
  * array of base addresses of various registers required to enter idle are
  * passed in r0 _strictly_ in following order:
- *	1) EMIF0 base virtual address [r0]
- *	2) EMIF1 base virtual address [r1]
- *	3) DMM base virtual address [r2]
- *	4) PLL base virtual address [r3]
- *	5) Control module base virtual address [r4]
- *	6) Flag indicating whether to proceed for DeepSleep (non-zero = yes)
- *	[r5]
+ * 	1) EMIF0 base virtual address [r0]
+ * 	2) EMIF1 base virtual address [r1]
+ * 	3) DMM base virtual address [r2]
+ * 	4) PLL base virtual address [r3]
+ * 	5) Control module base virtual address [r4]
+ * 	6) Flag indicating whether to proceed for DeepSleep (non-zero = yes)
+ * 	[r5]
  *
  * The code loads these addresses taking r0 value as reference to the array in
  * registers starting from r0, that is, EMIF0 base virtual address goes into r0
@@ -141,7 +141,7 @@ ENDPROC(ti81xx_do_wfi_sync)
  * rest in the code for other purpose (r7 to r12).
  *
  * Notes:
- *	1) Support DeepSleep is untested so far
+ * 	1) Support DeepSleep is untested so far
  *	2) It is assumed that no TLB management is required for this mode. E.g.,
  *	not doing any invalidate operation on TLBs.
  *	3) All targets for load/store in this file during the time DDR is in

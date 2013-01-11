@@ -321,6 +321,11 @@ config MACH_OMAP4_PANDA
 comment "TI81XX Board Type"
 	depends on ARCH_TI81XX
 
+config MACH_TI8148IPNC
+	bool "TI8148 IP NetCAM"
+	default n
+	depends on ARCH_TI814X
+
 config MACH_TI8148EVM
 	bool "TI8148 Evaluation Module"
 	default y

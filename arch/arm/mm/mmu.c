@@ -282,7 +282,7 @@ static struct mem_type mem_types[] = {
 		.prot_l1   = PMD_TYPE_TABLE,
 		.prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_SECT_S |
 				PMD_SECT_UNCACHED | PMD_SECT_XN,
-		.domain    = DOMAIN_KERNEL,
+		.domain = DOMAIN_KERNEL,
 	},
 };
 
