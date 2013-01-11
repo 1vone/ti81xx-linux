@@ -2940,8 +2940,46 @@ static inline void ti81xx_init_pcie(void)
 		ti81xx_pcie_data.device_id = 0xb800;
 	} else if (cpu_is_ti814x()) {
 
+		/* TODO: Add bitfield macros for following */
+
+		omap_ctrl_writel(0x00000002, TI814X_SERDES_REFCLK_CTL);
+		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG0);
+		omap_ctrl_writel(0x00640000, TI814X_CONTROL_PCIE_PLLCFG1);
+		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG2);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_PCIE_PLLCFG3);
+		omap_ctrl_writel(0x0000609C, TI814X_CONTROL_PCIE_PLLCFG4);
+
+		/* Configure SERDES misc bits - values as is from h/w */
+		if (omap_rev() > TI8148_REV_ES1_0)
+			omap_ctrl_writel(0x0000039E,
+					TI814X_CONTROL_PCIE_MISCCFG);
+		else
+			omap_ctrl_writel(0x00000E7B, TI814X_CONTROL_SMA0);
+
+		udelay(50);
+		omap_ctrl_writel(0x00000004, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x00000014, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x00000016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x30000016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x70007016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(200);
+		omap_ctrl_writel(0x70007017, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_PCIE_PLLSTATUS) & 0x1))
+			cpu_relax();
+
 		omap_ctrl_writel(TI81XX_PCIE_DEVTYPE_RC,
 				TI814X_CONTROL_PCIE_CFG);
+
 		/*
 		 * Force x1 lane as TI814X only supports x1 while the PCIe
 		 * registers read x2 leading to wrong capability printed form
@@ -3099,13 +3137,17 @@ static int __init omap2_init_devices(void)
 #ifdef CONFIG_ARCH_TI81XX
 	if (cpu_is_ti814x()) {
 		/* Init PCIe,SATA PLL here, before invoking respective init*/
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 		ti814x_pcie_pllcfg();
 		if(!cpu_is_ti811x())
 			ti814x_sata_pllcfg();
+#endif
 	}
 
 	ti81xx_ethernet_init();
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 	ti81xx_init_pcie();
+#endif
 	ti81xx_register_edma();
 	ti81xx_init_pcm();
 	ti816x_sr_init();
