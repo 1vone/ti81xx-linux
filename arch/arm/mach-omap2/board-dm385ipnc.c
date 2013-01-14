@@ -23,6 +23,7 @@
 #include <linux/mtd/partitions.h>
 #include <linux/gpio.h>
 #include <linux/i2c.h>
+#include <linux/phy.h>
 #include <linux/i2c/at24.h>
 #include <linux/regulator/machine.h>
 #include <linux/mfd/tps65910.h>

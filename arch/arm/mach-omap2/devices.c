@@ -2401,6 +2401,52 @@ void ti814x_cpsw_mux(void)
 #endif
 }
 
+#define S_INVALID_MAC	"deadbeaf"
+/* Get Ethernet address from kernel boot params */
+static unsigned char cpmac_eth_string[20] = S_INVALID_MAC;
+
+/* string to hex conversion */
+static unsigned char emac_str_to_hexnum(unsigned char c)
+{
+	if(c >= '0' && c <= '9')
+		return c - '0';
+	if(c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if(c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return 0;
+}
+
+/* string to ethernet address conversion */
+static void emac_str_to_ethaddr(unsigned char *ea, unsigned char *str)
+{
+	int i;
+	unsigned char num;
+
+	for(i = 0; i < ETH_ALEN; i++) {
+		if((*str == '.') || (*str == ':')) {
+			str++;
+		}
+		num = emac_str_to_hexnum(*str) << 4;
+		++str;
+		num |= (emac_str_to_hexnum(*str));
+		++str;
+		ea[i] = num;
+	}
+}
+
+static int cpmac_eth_setup(char *str)
+{
+	/* The first char passed from the bootloader is '=', so ignore it */
+	strcpy(cpmac_eth_string, str + 1);
+
+	printk("cpsw: kernel boot params Ethernet address: %s\n",
+	       cpmac_eth_string);
+
+	return 1;
+}
+__setup("eth", cpmac_eth_setup);
+
 void ti814x_cpsw_init(void)
 {
 	u32 mac_lo, mac_hi;
@@ -2422,7 +2468,13 @@ void ti814x_cpsw_init(void)
 	cpsw_slaves[1].mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
 	cpsw_slaves[1].mac_addr[4] = mac_lo & 0xFF;
 	cpsw_slaves[1].mac_addr[5] = (mac_lo & 0xFF00) >> 8;
-	memcpy(ti814x_cpsw_pdata.mac_addr, cpsw_slaves[0].mac_addr, ETH_ALEN);
+	/* Change the mac address according to eth in bootargs
+	   if it was assigned. */
+	if(strcmp(S_INVALID_MAC, cpmac_eth_string) != 0)
+		emac_str_to_ethaddr(ti814x_cpsw_pdata.mac_addr, cpmac_eth_string);
+	else
+		memcpy(ti814x_cpsw_pdata.mac_addr, cpsw_slaves[0].mac_addr, ETH_ALEN);
+
 #if 0
 	ti814x_cpsw_mux();
 #endif
