@@ -1023,6 +1023,9 @@ static struct omap_hwmod ti81xx_gpio1_hwmod = {
 	.slaves		= ti81xx_gpio1_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_gpio1_slaves),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_TI81XX),
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+	.flags	  = HWMOD_INIT_NO_RESET,
+#endif
 };
 
 /* GPIO2 TI81XX*/
@@ -1058,6 +1061,9 @@ static struct omap_hwmod ti81xx_gpio2_hwmod = {
 	.slaves		= ti81xx_gpio2_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_gpio2_slaves),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_TI81XX),
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+	.flags	  = HWMOD_INIT_NO_RESET,
+#endif
 };
 
 /* GPIO3 TI814X */
@@ -1094,6 +1100,9 @@ static struct omap_hwmod ti814x_gpio3_hwmod = {
 	.slaves_cnt	= ARRAY_SIZE(ti814x_gpio3_slaves),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_TI814X | CHIP_IS_DM385 |
 					CHIP_IS_TI811X),
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+	.flags	  = HWMOD_INIT_NO_RESET,
+#endif
 };
 
 /* GPIO4 TI814X*/
@@ -1130,6 +1139,9 @@ static struct omap_hwmod ti814x_gpio4_hwmod = {
 	.slaves_cnt	= ARRAY_SIZE(ti814x_gpio4_slaves),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_TI814X | CHIP_IS_DM385 |
 					CHIP_IS_TI811X),
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+	.flags	  = HWMOD_INIT_NO_RESET,
+#endif
 };
 
 /* GPIO5 TI811X*/

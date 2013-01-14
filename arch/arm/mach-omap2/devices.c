@@ -1827,7 +1827,7 @@ int __init ti81xx_register_edma(void)
 
 	return platform_device_register(pdev);
 }
-
+#if	!defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 static void __init ti81xx_video_mux(void)
 {
 	if (cpu_is_ti816x()) {
@@ -2112,6 +2112,7 @@ static void __init ti81xx_video_mux(void)
 		omap_writel(3, 0x48180324);
 }
 }
+#endif
 
 #else
 static inline void ti81xx_register_edma(void) {}
@@ -3154,7 +3155,9 @@ static int __init omap2_init_devices(void)
 	ti81xx_register_edma();
 	ti81xx_init_pcm();
 	ti816x_sr_init();
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 	ti81xx_video_mux();
+#endif
 #ifdef CONFIG_ARCH_TI814X
 	ti814x_enable_i2c2();
 	ti814x_d_can_init(0);

@@ -56,11 +56,6 @@
 #include "control.h"
 #include "cm81xx.h"
 
-#define GPIO_TSC               31
-
-/* Convert GPIO signal to GPIO pin number */
-#define GPIO_TO_PIN(bank, gpio) (32 * (bank) + (gpio))
-
 #ifdef CONFIG_OMAP_MUX
 static struct omap_board_mux board_mux[] __initdata = {
 	{ .reg_offset = OMAP_MUX_TERMINATOR },
