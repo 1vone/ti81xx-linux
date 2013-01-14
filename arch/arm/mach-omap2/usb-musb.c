@@ -381,7 +381,7 @@ void __init usb_musb_init(struct omap_musb_board_data *board_data)
 		board_data->phyctrl_enable = 1;
 
 		/* disable multipoint for ti816x for ES1_0/1_1 */
-		if (cpu_is_ti816x()) {
+		if (cpu_is_ti816x() && (omap_rev() != TI8168_REV_ES2_0)) {
 			board_data->usbphy_rxcalib_enable = 0;
 			if (omap_rev() < TI8168_REV_ES2_0) {
 				musb_config.multipoint = 0;

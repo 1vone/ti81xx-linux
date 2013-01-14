@@ -144,8 +144,8 @@
 
 /* TODO Not supported for now */
 #if 0
-#define TI81XX_HDMI_SET_MODE	TI81XX_HDMI_IOW(6, enum ti81xxhdmi_mode)
-#define TI81XX_HDMI_GET_MODE	TI81XX_HDMI_IOR(7, enum ti81xxhdmi_mode)
+#define TI81XX_HDMI_SET_MODE         	TI81XX_HDMI_IOW(6, enum ti81xxhdmi_mode)
+#define TI81XX_HDMI_GET_MODE         	TI81XX_HDMI_IOR(7, enum ti81xxhdmi_mode)
 #endif
 
 /* HDCP events

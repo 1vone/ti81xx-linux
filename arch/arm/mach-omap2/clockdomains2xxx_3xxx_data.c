@@ -872,7 +872,7 @@ static struct clockdomain *clockdomains_omap2[] __initdata = {
 	&ivahd_814x_clkdm,
 	&alwon2_mc_814x_clkdm,
 	&sgx_814x_clkdm,
-	&hdvpss_814x_clkdm,
+//	&hdvpss_814x_clkdm,
 	&isp_814x_clkdm,
 	&alwon2_l3_med_814x_clkdm,
 	&alwon2_pcie_814x_clkdm,

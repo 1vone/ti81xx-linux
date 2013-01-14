@@ -793,7 +793,7 @@ static int dc_set_vencmode(struct vps_dcvencinfo *vinfo)
 			if (vi.modeinfo[idx].minfo.standard !=
 			    vinfo->modeinfo[i].minfo.standard) {
 				VPSSERR("venc %d already running with \
-					different mode %d\n",
+						different mode %d\n",
 					vi.modeinfo[idx].vencid,
 					vi.modeinfo[idx].minfo.standard);
 				/*update the local infor*/

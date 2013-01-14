@@ -697,7 +697,7 @@ int __init vps_system_init(struct platform_device *pdev)
 				" please use TI811x M3 firmware\n");
 			goto exit;
 		}
-       }	  	
+	}
 	if (v_pdata->cpu != CPU_DM816X) {
 		sys_ctrl->pbase = ioremap(TI814X_PLL_BASE + VIDPLL_OFFSET,
 					VIDPLL_SIZE * 3);
