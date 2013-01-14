@@ -452,6 +452,18 @@ static struct resource omap2_mcspi1_resources[] = {
 		.end		= OMAP2_MCSPI1_BASE + 0xff,
 		.flags		= IORESOURCE_MEM,
 	},
+	{
+		//SPI0XEVT0: SPI0 Transmit 0
+		.start		= 16,
+		.end		= 16,
+		.flags		= IORESOURCE_DMA,
+	},
+	{
+		//SPI0REVT0: SPI0 Receive 0
+		.start		= 17,
+		.end		= 17,
+		.flags		= IORESOURCE_DMA,
+	},
 };
 
 static struct platform_device omap2_mcspi1 = {
