@@ -1639,6 +1639,7 @@ static struct platform_device ti816x_edma_device = {
 static const s16 ti814x_dma_rsv_chans[][2] = {
 	/* (offset, number) */
 	{0, 2},
+	{5, 5},
 	{14, 2},
 	{26, 6},
 	{48, 4},
@@ -1649,6 +1650,7 @@ static const s16 ti814x_dma_rsv_chans[][2] = {
 static const s16 ti814x_dma_rsv_slots[][2] = {
 	/* (offset, number) */
 	{0, 2},
+	{5, 5},
 	{14, 2},
 	{26, 6},
 	{48, 4},
