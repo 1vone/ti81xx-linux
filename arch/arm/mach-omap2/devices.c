@@ -37,6 +37,9 @@
 #include <plat/omap_hwmod.h>
 #include <plat/omap_device.h>
 #include <plat/asp.h>
+#ifdef CONFIG_HAVE_PWM
+#include <plat/pwm.h>
+#endif
 #include <plat/smartreflex.h>
 #include <plat/ti81xx-vpss.h>
 #include "mux.h"
@@ -3209,3 +3212,49 @@ static int __init omap_init_wdt(void)
 }
 subsys_initcall(omap_init_wdt);
 #endif
+
+#ifdef CONFIG_HAVE_PWM
+
+#define PWM_PLATFROM_NAME "omap-pwm"
+
+struct platform_device **omap_pwm_devices;
+
+int __init omap_register_pwm_config(struct omap2_pwm_platform_config *config, int size)
+{
+	int ret = 0, i;
+	if(!config || size < 0)
+		return -EINVAL;
+	omap_pwm_devices = (struct platform_device**) kzalloc(sizeof(struct platform_device*) * size, GFP_KERNEL);
+	if(omap_pwm_devices == NULL)
+		return -ENOMEM;
+	for(i = 0; i < size; i++) {
+		omap_pwm_devices[i] = platform_device_alloc(PWM_PLATFROM_NAME, i);
+		if(!omap_pwm_devices[i]) {
+			while(i-- > 0) {
+				platform_device_unregister(omap_pwm_devices[i]);
+				omap_pwm_devices[i] = NULL;
+			}
+			kfree(omap_pwm_devices);
+			omap_pwm_devices = NULL;
+			ret = -ENOMEM;
+			break;
+		}
+		omap_pwm_devices[i]->dev.platform_data = &config[i];
+		ret = platform_device_add(omap_pwm_devices[i]);
+		if(ret) {
+			platform_device_put(omap_pwm_devices[i]);
+			omap_pwm_devices[i] = NULL;
+			while(i-- > 0) {
+				platform_device_unregister(omap_pwm_devices[i]);
+				omap_pwm_devices[i] = NULL;
+			}
+			kfree(omap_pwm_devices);
+			omap_pwm_devices = NULL;
+			break;
+		}
+	}
+	return ret;
+}
+EXPORT_SYMBOL_GPL(omap_register_pwm_config);
+#endif
+

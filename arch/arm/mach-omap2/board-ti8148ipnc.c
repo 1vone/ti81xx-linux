@@ -48,7 +48,9 @@
 #include <plat/nand.h>
 #include <plat/hdmi_lib.h>
 #include <mach/board-ti814x.h>
-
+#ifdef CONFIG_HAVE_PWM
+#include <plat/pwm.h>
+#endif
 #include "board-flash.h"
 #include "clock.h"
 #include "mux.h"
@@ -764,6 +766,19 @@ static struct omap_musb_board_data musb_board_data = {
 	.instances	= 1,
 };
 
+#ifdef CONFIG_HAVE_PWM
+struct omap2_pwm_platform_config ti8148_ipnc_pwm_cfg[] ={
+	{
+		.timer_id = 6,
+		.polarity = 1,
+	},
+	{
+		.timer_id = 7,
+		.polarity = 1,
+	}
+};
+#endif
+
 static void __init ti8148_ipnc_init_irq(void)
 {
 	omap2_init_common_infrastructure();
@@ -883,6 +898,9 @@ static void __init ti8148_ipnc_init(void)
 	platform_add_devices(ti8148_devices, ARRAY_SIZE(ti8148_devices));
 #endif
 	regulator_use_dummy_regulator();
+#ifdef CONFIG_HAVE_PWM
+	omap_register_pwm_config(ti8148_ipnc_pwm_cfg, ARRAY_SIZE(ti8148_ipnc_pwm_cfg));
+#endif
 	board_nor_init(ti814x_evm_norflash_partitions,
 		ARRAY_SIZE(ti814x_evm_norflash_partitions), 0);
 
