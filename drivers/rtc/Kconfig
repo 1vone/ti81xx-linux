@@ -354,6 +354,16 @@ config RTC_DRV_RX8025
 	  This driver can also be built as a module. If so, the module
 	  will be called rtc-rx8025.
 
+config RTC_DRV_TPS65911
+        tristate "TPS65911"
+		depends on MFD_TPS65910
+        help
+          If you say yes here you get support for the TPS65911 RTC chips.
+
+          This driver can also be built as a module. If so, the module
+          will be called rtc-tps65911.
+
+
 endif # I2C
 
 comment "SPI RTC drivers"

@@ -154,7 +154,7 @@
  * @num: 0, 2 or 4. ( region 0, region 2, region 4).
  */
 struct ti81xx_bar_info {
-	u32  num;
+	u32 num;
 	unsigned long addr;
 	u32 size;
 	u32 mode;
