@@ -627,16 +627,13 @@ CONFIG_MTD_CFI_I2=y
 # Mapping drivers for chip access
 #
 # CONFIG_MTD_COMPLEX_MAPPINGS is not set
-# CONFIG_MTD_INTEL_VR_NOR is not set
 # CONFIG_MTD_PLATRAM is not set
 
 #
 # Self-contained MTD device drivers
 #
-# CONFIG_MTD_PMC551 is not set
 # CONFIG_MTD_DATAFLASH is not set
-CONFIG_MTD_M25P80=y
-CONFIG_M25PXX_USE_FAST_READ=y
+# CONFIG_MTD_M25P80 is not set
 # CONFIG_MTD_SST25L is not set
 # CONFIG_MTD_SLRAM is not set
 # CONFIG_MTD_PHRAM is not set
