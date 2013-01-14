@@ -1050,29 +1050,10 @@ CONFIG_I2C_HELPER_AUTO=y
 #
 
 #
-# PC SMBus host controller drivers
-#
-# CONFIG_I2C_ALI1535 is not set
-# CONFIG_I2C_ALI1563 is not set
-# CONFIG_I2C_ALI15X3 is not set
-# CONFIG_I2C_AMD756 is not set
-# CONFIG_I2C_AMD8111 is not set
-# CONFIG_I2C_I801 is not set
-# CONFIG_I2C_ISCH is not set
-# CONFIG_I2C_PIIX4 is not set
-# CONFIG_I2C_NFORCE2 is not set
-# CONFIG_I2C_SIS5595 is not set
-# CONFIG_I2C_SIS630 is not set
-# CONFIG_I2C_SIS96X is not set
-# CONFIG_I2C_VIA is not set
-# CONFIG_I2C_VIAPRO is not set
-
-#
 # I2C system bus drivers (mostly embedded / system-on-chip)
 #
 # CONFIG_I2C_DESIGNWARE is not set
 # CONFIG_I2C_GPIO is not set
-# CONFIG_I2C_INTEL_MID is not set
 # CONFIG_I2C_OCORES is not set
 CONFIG_I2C_OMAP=y
 # CONFIG_I2C_PCA_PLATFORM is not set
@@ -1084,7 +1065,6 @@ CONFIG_I2C_OMAP=y
 #
 # CONFIG_I2C_PARPORT_LIGHT is not set
 # CONFIG_I2C_TAOS_EVM is not set
-# CONFIG_I2C_TINY_USB is not set
 
 #
 # Other I2C/SMBus bus drivers
@@ -1103,7 +1083,6 @@ CONFIG_SPI_MASTER=y
 # CONFIG_SPI_BITBANG is not set
 # CONFIG_SPI_GPIO is not set
 CONFIG_SPI_OMAP24XX=y
-# CONFIG_SPI_TOPCLIFF_PCH is not set
 # CONFIG_SPI_XILINX is not set
 # CONFIG_SPI_DESIGNWARE is not set
 
