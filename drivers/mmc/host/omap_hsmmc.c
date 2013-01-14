@@ -197,7 +197,21 @@ struct omap_hsmmc_host {
 };
 
 static irqreturn_t omap_hsmmc_cd_handler(int irq, void *dev_id);
+#ifdef CONFIG_TI8148EVM_WL12XX
+static int omap_hsmmc_card_detection_disabled(struct omap_hsmmc_host *host)
+{
+	/*
+	 * According to TI814X's TRM, mmc0's card detection pin is not
+	 * connected. As a result, the card cannot be detected and the
+	 * insertion bit in PSTATE will always be 0 and any requests will
+	 * timeout. As a workaround, assume that a card is always inserted.
+	 */
+	if (cpu_is_ti814x() && host->id == 0)
+		return 1;
 
+	return 0;
+}
+#endif
 static int omap_hsmmc_card_detect(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
@@ -206,6 +220,11 @@ static int omap_hsmmc_card_detect(struct device *dev, int slot)
 
 	u32 pstate;
 	u32 enabled;
+
+#ifdef CONFIG_TI8148EVM_WL12XX
+	if (omap_hsmmc_card_detection_disabled(host))
+		return 1;
+#endif
 
 	if (mmc->version != MMC_CTRL_VERSION_2)
 		/* NOTE: assumes card detect signal is active-low */
@@ -1566,6 +1585,9 @@ static void omap_hsmmc_request(struct mmc_host *mmc, struct mmc_request *req)
 {
 	struct omap_hsmmc_host *host = mmc_priv(mmc);
 	int err;
+#ifdef CONFIG_TI8148EVM_WL12XX
+	u32 pstate = 0;
+#endif
 
 	BUG_ON(host->req_in_progress);
 	BUG_ON(host->dma_ch != -1);
@@ -1599,6 +1621,19 @@ static void omap_hsmmc_request(struct mmc_host *mmc, struct mmc_request *req)
 		mmc_request_done(mmc, req);
 		return;
 	}
+#ifdef CONFIG_TI8148EVM_WL12XX
+	pstate = OMAP_HSMMC_READ(host->base, PSTATE);
+
+	if (!omap_hsmmc_card_detection_disabled(host) &&
+			(host->pdata->version == MMC_CTRL_VERSION_2) &&
+			((pstate & PSTATE_CINS_MASK) == 0)) {
+		omap_hsmmc_reset_controller_fsm(host, SRC);
+		host->cmd = req->cmd;
+		host->cmd->error = -ETIMEDOUT;
+		omap_hsmmc_cmd_done(host, host->cmd);
+		return;
+	}
+#endif
 
 	omap_hsmmc_start_command(host, req->cmd, req->data);
 }
