@@ -267,6 +267,8 @@ static int omap_hsmmc_get_wp(struct device *dev, int slot)
 		 * Otherwise, detect the status and then return whether
 		 * the card is 'ro' or 'rw'.
 		 */
+		 if(machine_is_dm385ipnc())
+		 	return !(pstate >> PSTATE_WP_SHIFT);
 		if (cpu_is_ti814x())
 			return 0;
 		else
@@ -580,6 +582,9 @@ static int omap_hsmmc_gpio_init(struct omap_mmc_platform_data *pdata)
 		ret = gpio_request(pdata->slots[0].switch_pin, "mmc_cd");
 		if (ret)
 			return ret;
+		ret= gpio_export(pdata->slots[0].switch_pin,false);
+		if(ret)
+			goto err_free_sp;
 		ret = gpio_direction_input(pdata->slots[0].switch_pin);
 		if (ret)
 			goto err_free_sp;
@@ -591,6 +596,9 @@ static int omap_hsmmc_gpio_init(struct omap_mmc_platform_data *pdata)
 		ret = gpio_request(pdata->slots[0].gpio_wp, "mmc_wp");
 		if (ret)
 			goto err_free_cd;
+		ret= gpio_export(pdata->slots[0].gpio_wp,false);
+		if(ret)
+			goto err_free_wp;
 		ret = gpio_direction_input(pdata->slots[0].gpio_wp);
 		if (ret)
 			goto err_free_wp;

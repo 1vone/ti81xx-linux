@@ -709,6 +709,7 @@ static int mmc_blk_probe(struct mmc_card *card)
 
 	mmc_set_drvdata(card, md);
 	add_disk(md->disk);
+	set_disk_ro(md->disk,md->read_only);
 	return 0;
 
  out:
