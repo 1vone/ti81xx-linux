@@ -569,6 +569,19 @@ static struct i2c_board_info __initdata ti814x_i2c_boardinfo[] = {
 		I2C_BOARD_INFO("tps65911", 0x2D),
 		.platform_data = &tps65911_pdata,
 	},
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
+	{
+		I2C_BOARD_INFO("qt602240_ts", 0x4A),
+		.platform_data = &ts_platform_data,
+	},
+	{
+		I2C_BOARD_INFO("PCF_8575", 0x21),
+	},
+	{
+		I2C_BOARD_INFO("tlc59108", 0x40),
+	},
+#endif
+
 };
 
 static void __init ti814x_tsc_init(void)
@@ -595,10 +608,15 @@ static void __init ti814x_evm_i2c_init(void)
 	/* There are 4 instances of I2C in TI814X but currently only one
 	 * instance is being used on the TI8148 EVM
 	 */
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	omap_register_i2c_bus(1, 100, ti814x_i2c_boardinfo,
 				ARRAY_SIZE(ti814x_i2c_boardinfo));
 	omap_register_i2c_bus(3, 100, ti814x_i2c_boardinfo1,
 				ARRAY_SIZE(ti814x_i2c_boardinfo1));
+#else
+	omap_register_i2c_bus(1, 400, ti814x_i2c_boardinfo,
+				ARRAY_SIZE(ti814x_i2c_boardinfo));
+#endif
 }
 
 static u8 ti8148_iis_serializer_direction[] = {
@@ -878,7 +896,9 @@ static void __init ti8148_evm_init(void)
 
 	ti814x_mux_init(board_mux);
 	omap_serial_init();
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	ti814x_tsc_init();
+#endif
 	ti814x_evm_i2c_init();
 	ti81xx_register_mcasp(0, &ti8148_evm_snd_data);
 

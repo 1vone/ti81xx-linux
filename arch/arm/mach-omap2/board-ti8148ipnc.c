@@ -276,10 +276,13 @@ static void __init ti814x_evm_i2c_init(void)
 	/* There are 4 instances of I2C in TI814X but currently only one
 	 * instance is being used on the TI8148 EVM
 	 */
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	omap_register_i2c_bus(1, 100, ti814x_i2c_boardinfo,
 				ARRAY_SIZE(ti814x_i2c_boardinfo));
-	omap_register_i2c_bus(3, 100, ti814x_i2c_boardinfo1,
-				ARRAY_SIZE(ti814x_i2c_boardinfo1));
+#else
+	omap_register_i2c_bus(1, 100, ti814x_i2c_boardinfo,
+				ARRAY_SIZE(ti814x_i2c_boardinfo));
+#endif
 }
 
 static u8 ti8148_iis_serializer_direction[] = {

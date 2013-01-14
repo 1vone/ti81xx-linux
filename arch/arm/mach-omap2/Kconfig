@@ -346,6 +346,11 @@ config MACH_DM385IPNC
 	default n
 	depends on ARCH_TI814X
 
+config TI8148_EVM_OPTIMIZED
+	bool "Enable optimization for TI8148 EVM"
+	default n
+	depends on ARCH_TI814X
+
 config MACH_TI8168EVM
 	bool "TI8168 Evaluation Module"
 	default y

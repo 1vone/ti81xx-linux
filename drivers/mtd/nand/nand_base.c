@@ -50,6 +50,9 @@
 #ifdef CONFIG_MTD_PARTITIONS
 #include <linux/mtd/partitions.h>
 #endif
+#ifdef CONFIG_TI8148_EVM_OPTIMIZED
+static unsigned int ecc_subpage_flags;
+#endif
 
 /* Define default oob placement schemes for large and small page devices */
 static struct nand_ecclayout nand_oob_8 = {
@@ -301,6 +304,7 @@ static void nand_write_buf16(struct mtd_info *mtd, const uint8_t *buf, int len)
  */
 static void nand_read_buf16(struct mtd_info *mtd, uint8_t *buf, int len)
 {
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	int i;
 	struct nand_chip *chip = mtd->priv;
 	u16 *p = (u16 *) buf;
@@ -308,6 +312,34 @@ static void nand_read_buf16(struct mtd_info *mtd, uint8_t *buf, int len)
 
 	for (i = 0; i < len; i++)
 		p[i] = readw(chip->IO_ADDR_R);
+#else
+			__asm__ (
+				 "stmfd sp!, {r4-r11}\n\t"
+				 "ldr r3, [r0, #156]\n\t"
+				 "mov r2, r2, asr #2\n\t"
+				 "mov r0, #0\n\t"
+				 "mov r7, #1\n\t"
+				 "ldr r3, [r3, #0]\n\t"
+				 "b for_loop\n"
+
+				 "read_data:\n\t"
+				 "ldr r4, [r3]\n\t"
+				 "ldr r5, [r3]\n\t"
+				 "ldr r6, [r3]\n\t"
+				 "ldr r7, [r3]\n\t"
+				 "ldr r8, [r3]\n\t"
+				 "ldr r9, [r3]\n\t"
+				  "ldr r10, [r3]\n\t"
+				  "ldr r11, [r3]\n\t"
+				  "stmia r1!, {r4-r11}\n\t"
+				  "add r0, r0, #8\n"
+
+				  "for_loop:\n\t"
+					"cmp r0, r2\n\t"
+					"blt read_data\n\t"
+					"ldmfd sp!, {r4-r11}\n\t"
+				);
+#endif
 }
 
 /**
@@ -1987,6 +2019,9 @@ static void nand_write_page_swecc(struct mtd_info *mtd, struct nand_chip *chip,
 static void nand_write_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 				  const uint8_t *buf)
 {
+#ifdef CONFIG_TI8148_EVM_OPTIMIZED
+	int j;
+#endif
 	int i, eccsize = chip->ecc.size;
 	int eccbytes = chip->ecc.bytes;
 	int eccsteps = chip->ecc.steps;
@@ -1995,10 +2030,18 @@ static void nand_write_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 	uint32_t *eccpos = chip->ecc.layout->eccpos;
 
 	memset(ecc_calc, 0, eccsteps * eccbytes);
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
+#else
+	for (i = 0, j = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize, j++) {
+#endif
 		chip->ecc.hwctl(mtd, NAND_ECC_WRITE);
 		chip->write_buf(mtd, p, eccsize);
 		chip->ecc.calculate(mtd, p, &ecc_calc[i]);
+#ifdef CONFIG_TI8148_EVM_OPTIMIZED
+		if (!(ecc_subpage_flags & (1 << j)))
+			memset(&ecc_calc[i], 0xff, eccbytes);
+#endif
 	}
 
 	for (i = 0; i < chip->ecc.total; i++)
@@ -2291,6 +2334,12 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 		int bytes = mtd->writesize;
 		int cached = writelen > bytes && page != blockmask;
 		uint8_t *wbuf = buf;
+#ifdef CONFIG_TI8148_EVM_OPTIMIZED
+		int eccsize = chip->ecc.size;
+		int i, j;
+
+		ecc_subpage_flags = 0;
+#endif
 
 		/* Partial page write ? */
 		if (unlikely(column || writelen < (mtd->writesize - 1))) {
@@ -2300,7 +2349,17 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 			memset(chip->buffers->databuf, 0xff, mtd->writesize);
 			memcpy(&chip->buffers->databuf[column], buf, bytes);
 			wbuf = chip->buffers->databuf;
+#ifdef CONFIG_TI8148_EVM_OPTIMIZED
+			i = column / eccsize;
+			j = i + (writelen / eccsize);
+			for (; i < j; i++)
+				ecc_subpage_flags |= (1 << i);
+#endif
 		}
+#ifdef CONFIG_TI8148_EVM_OPTIMIZED
+		else
+			ecc_subpage_flags = ~0;
+#endif
 
 		if (unlikely(oob)) {
 			size_t len = min(oobwritelen, oobmaxlen);

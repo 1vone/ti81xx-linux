@@ -87,8 +87,13 @@
 #endif
 
 /* Define the friendly delay before and after opening net devices */
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 #define CONF_PRE_OPEN		500	/* Before opening: 1/2 second */
 #define CONF_POST_OPEN		1	/* After opening: 1 second */
+#else
+#define CONF_PRE_OPEN		5	/* Before opening: 1/2 second */
+#define CONF_POST_OPEN		5	/* After opening: 1 second */
+#endif
 
 /* Define the timeout for waiting for a DHCP/BOOTP/RARP reply */
 #define CONF_OPEN_RETRIES 	2	/* (Re)open devices twice */
@@ -1378,7 +1383,11 @@ static int __init ip_auto_config(void)
 		return err;
 
 	/* Give drivers a chance to settle */
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	ssleep(CONF_POST_OPEN);
+#else
+	msleep(CONF_POST_OPEN);
+#endif
 
 	/*
 	 * If the config information is insufficient (e.g., our IP address or

@@ -888,7 +888,11 @@ static inline void wait_for_xmitr(struct uart_omap_port *up)
 
 		if (--tmout == 0)
 			break;
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 		udelay(1);
+#else
+		ndelay(10);
+#endif
 	} while ((status & BOTH_EMPTY) != BOTH_EMPTY);
 
 	/* Wait up to 1s for flow control if necessary */
@@ -900,8 +904,11 @@ static inline void wait_for_xmitr(struct uart_omap_port *up)
 			up->msr_saved_flags |= msr & MSR_SAVE_FLAGS;
 			if (msr & UART_MSR_CTS)
 				break;
-
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 			udelay(1);
+#else
+			ndelay(10);
+#endif
 		}
 	}
 }

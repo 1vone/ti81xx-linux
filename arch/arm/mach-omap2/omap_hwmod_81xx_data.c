@@ -1286,11 +1286,13 @@ static __initdata struct omap_hwmod *ti81xx_hwmods[] = {
 	&ti816x_l4_slow_hwmod,
 	&ti816x_mpu_hwmod,
 	&ti816x_uart1_hwmod,
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 	&ti816x_uart2_hwmod,
 	&ti816x_uart3_hwmod,
 	&ti814x_uart4_hwmod,
 	&ti814x_uart5_hwmod,
 	&ti814x_uart6_hwmod,
+#endif
 	&ti816x_wd_timer2_hwmod,
 	&ti814x_wd_timer1_hwmod,
 	&ti81xx_i2c1_hwmod,	/* Note: In TI814X this enables I2C0/2 */

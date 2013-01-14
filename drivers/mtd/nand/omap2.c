@@ -1232,7 +1232,11 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		info->nand.chip_delay = 0;
 	} else {
 		info->nand.waitfunc = omap_wait;
+#ifndef CONFIG_TI8148_EVM_OPTIMIZED
 		info->nand.chip_delay = 50;
+#else
+		info->nand.chip_delay = 22;
+#endif
 	}
 
 
