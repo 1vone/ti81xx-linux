@@ -108,3 +108,12 @@ config SND_SOC_TI81XX_HDMI
 	  Build the module for on-chip HDMI audio on TI
 	  81XX EVM
 
+config  SND_TI81XX_SOC_IPNC
+	tristate "SoC Audio support for TI81XX EVM"
+	depends on SND_TI81XX_SOC && MACH_TI8148IPNC
+	select SND_DAVINCI_SOC_MCASP
+	select SND_SOC_TLV320AIC26
+	help
+	  Say Y if you want to add support for SoC audio on TI
+	  81XX IPNC
+

@@ -20,6 +20,8 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
+#include <asm/mach-types.h>
+#include <linux/gpio.h>
 
 #include "tlv320aic26.h"
 
@@ -155,18 +157,32 @@ static int aic26_hw_params(struct snd_pcm_substream *substream,
 
 	/* select data word length */
 	switch (params_format(params)) {
+#ifdef CONFIG_MACH_TI8148IPNC
+	/* Although this is not follow spec, but it works. */
+	case SNDRV_PCM_FORMAT_S16_LE: wlen = AIC26_WLEN_16; break;
+	case SNDRV_PCM_FORMAT_S24_LE: wlen = AIC26_WLEN_24; break;
+	case SNDRV_PCM_FORMAT_S32_LE: wlen = AIC26_WLEN_32; break;
+#else
 	case SNDRV_PCM_FORMAT_S8:     wlen = AIC26_WLEN_16; break;
 	case SNDRV_PCM_FORMAT_S16_BE: wlen = AIC26_WLEN_16; break;
 	case SNDRV_PCM_FORMAT_S24_BE: wlen = AIC26_WLEN_24; break;
 	case SNDRV_PCM_FORMAT_S32_BE: wlen = AIC26_WLEN_32; break;
+#endif
 	default:
 		dev_dbg(&aic26->spi->dev, "bad format\n"); return -EINVAL;
 	}
 
 	/* Configure PLL */
-	pval = 1;
-	jval = (fsref == 44100) ? 7 : 8;
-	dval = (fsref == 44100) ? 5264 : 1920;
+	pval = aic26->mclk / 20000000 + 1;
+	jval = fsref * 2048 * pval /aic26->mclk;
+	if(aic26->mclk / pval < 10000000){
+		/* D must be zero */
+		dval = 0;
+	}else{
+		dval = (fsref * 2048 * pval - aic26->mclk * jval) / (aic26->mclk / 10000);
+	}
+	dev_dbg(&aic26->spi->dev, "pval = %d, jval = %d, dval = %d.\n",
+			pval, jval, dval);
 	qval = 0;
 	reg = 0x8000 | qval << 11 | pval << 8 | jval << 2;
 	aic26_reg_write(codec, AIC26_REG_PLL_PROG1, reg);
@@ -249,7 +265,8 @@ static int aic26_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 	/* interface format */
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:     aic26->datfm = AIC26_DATFM_I2S; break;
-	case SND_SOC_DAIFMT_DSP_A:   aic26->datfm = AIC26_DATFM_DSP; break;
+	/* Aic26 do NOT have 1-bit delay control */
+	case SND_SOC_DAIFMT_DSP_B:   aic26->datfm = AIC26_DATFM_DSP; break;
 	case SND_SOC_DAIFMT_RIGHT_J: aic26->datfm = AIC26_DATFM_RIGHTJ; break;
 	case SND_SOC_DAIFMT_LEFT_J:  aic26->datfm = AIC26_DATFM_LEFTJ; break;
 	default:
@@ -266,9 +283,14 @@ static int aic26_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 			 SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_22050 |\
 			 SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |\
 			 SNDRV_PCM_RATE_48000)
+#ifdef CONFIG_MACH_TI8148IPNC
+/* AIC26 DO NOT support hardware 8 bit transfer */
+#define AIC26_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE |\
+			 SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
+#else
 #define AIC26_FORMATS	(SNDRV_PCM_FMTBIT_S8     | SNDRV_PCM_FMTBIT_S16_BE |\
 			 SNDRV_PCM_FMTBIT_S24_BE | SNDRV_PCM_FMTBIT_S32_BE)
-
+#endif
 static struct snd_soc_dai_ops aic26_dai_ops = {
 	.hw_params	= aic26_hw_params,
 	.digital_mute	= aic26_mute,
@@ -298,9 +320,9 @@ static struct snd_soc_dai_driver aic26_dai = {
 /* ---------------------------------------------------------------------
  * ALSA controls
  */
-static const char *aic26_capture_src_text[] = {"Mic", "Aux"};
+static const char *aic26_capture_src_text[] = {"Mic", "Aux", "Differential"};
 static const struct soc_enum aic26_capture_src_enum =
-	SOC_ENUM_SINGLE(AIC26_REG_AUDIO_CTRL1, 12, 2, aic26_capture_src_text);
+	SOC_ENUM_SINGLE(AIC26_REG_AUDIO_CTRL1, 12, 3, aic26_capture_src_text);
 
 static const struct snd_kcontrol_new aic26_snd_controls[] = {
 	/* Output */
@@ -312,8 +334,74 @@ static const struct snd_kcontrol_new aic26_snd_controls[] = {
 	SOC_SINGLE("Keyclick amplitude", AIC26_REG_AUDIO_CTRL2, 12, 0x7, 0),
 	SOC_SINGLE("Keyclick frequency", AIC26_REG_AUDIO_CTRL2, 8, 0x7, 0),
 	SOC_SINGLE("Keyclick period", AIC26_REG_AUDIO_CTRL2, 4, 0xf, 0),
-	SOC_ENUM("Capture Source", aic26_capture_src_enum),
+	SOC_SINGLE("AGC switch", AIC26_REG_ADC_GAIN, 0, 0x1, 0),
+	SOC_SINGLE("AGC target gain", AIC26_REG_ADC_GAIN, 5, 0x7, 1),
+	SOC_SINGLE("AGC time constants", AIC26_REG_ADC_GAIN, 1, 0xf, 0),
+	SOC_SINGLE("AGC noise threshold", AIC26_REG_AUDIO_CTRL3, 4, 0x3, 1),
+	SOC_SINGLE("AGC Debounce time (normal to silence mode)", AIC26_REG_AUDIO_CTRL5, 6, 0x7, 0),
+	SOC_SINGLE("AGC Debounce time (silence to normal mode)", AIC26_REG_AUDIO_CTRL5, 3, 0x7, 0),
+	SOC_SINGLE("MAX Input Gain Applicable for AGC", AIC26_REG_AUDIO_CTRL5, 9, 0x7f, 0),
+	SOC_SINGLE("AGC Hysteresis Control", AIC26_REG_AUDIO_CTRL4, 9, 0x3, 0),
 };
+
+static const struct snd_kcontrol_new tlv320aic26_output_mixer_controls[] = {
+	SOC_DAPM_SINGLE("Analog Sidetone Switch", AIC26_REG_POWER_CTRL, 11, 1, 1),
+	SOC_DAPM_SINGLE("Playback Switch", AIC26_REG_POWER_CTRL, 10, 1, 1),
+};
+
+static const struct snd_kcontrol_new tlv320aic26_rec_src_mux_controls =
+SOC_DAPM_ENUM("Input Select", aic26_capture_src_enum);
+
+static const struct snd_soc_dapm_widget tlv320aic26_dapm_widgets[] = {
+	SND_SOC_DAPM_DAC("DAC", "Playback", AIC26_REG_POWER_CTRL, 10, 1),
+	SND_SOC_DAPM_ADC("ADC", "Capture", AIC26_REG_POWER_CTRL, 9, 1),
+	SND_SOC_DAPM_MUX("Capture Source", SND_SOC_NOPM, 0, 0,
+			 &tlv320aic26_rec_src_mux_controls),
+	SND_SOC_DAPM_MIXER("Output Mixer", AIC26_REG_POWER_CTRL, 12, 0,
+			   &tlv320aic26_output_mixer_controls[0],
+			   ARRAY_SIZE(tlv320aic26_output_mixer_controls)),
+
+	/* Mic Bias */
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2V",
+			 AIC26_REG_POWER_CTRL, 4, 1, 1, 0),
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2.5V",
+			 AIC26_REG_POWER_CTRL, 4, 1, 0, 0),
+
+	SND_SOC_DAPM_OUTPUT("LHPOUT"),
+	SND_SOC_DAPM_OUTPUT("RHPOUT"),
+
+	SND_SOC_DAPM_INPUT("AUXIN"),
+	SND_SOC_DAPM_INPUT("MICIN"),
+	SND_SOC_DAPM_INPUT("DIFFERENTIAL"),
+};
+
+static const struct snd_soc_dapm_route intercon[] = {
+	/* Output Mixer */
+	{"Output Mixer", "Analog Sidetone Switch", "Capture Source"},
+	{"Output Mixer", "Playback Switch", "DAC"},
+
+	/* Outputs */
+	{"RHPOUT", NULL, "Output Mixer"},
+	{"LHPOUT", NULL, "Output Mixer"},
+
+	/* input mux */
+	{"Capture Source", "Aux", "AUXIN"},
+	{"Capture Source", "Mic", "MICIN"},
+	{"Capture Source", "Differential", "DIFFERENTIAL"},
+	{"ADC", NULL, "Capture Source"},
+
+};
+
+static int aic26_add_widgets(struct snd_soc_codec *codec)
+{
+	snd_soc_dapm_new_controls(codec, tlv320aic26_dapm_widgets,
+				  ARRAY_SIZE(tlv320aic26_dapm_widgets));
+
+	/* set up audio path interconnects */
+	snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
+
+	return 0;
+}
 
 /* ---------------------------------------------------------------------
  * SPI device portion of driver: sysfs files for debugging
@@ -360,17 +448,40 @@ static int aic26_probe(struct snd_soc_codec *codec)
 
 	dev_info(codec->dev, "Probing AIC26 SoC CODEC driver\n");
 
+#if machine_is_ti8148ipnc()
+	gpio_request(8, "AIC26_RST");
+	gpio_direction_output(8, GPIOF_DIR_OUT);
+	gpio_set_value(8, 1);
+#endif
+
 	/* Reset the codec to power on defaults */
 	aic26_reg_write(codec, AIC26_REG_RESET, 0xBB00);
 
-	/* Power up CODEC */
-	aic26_reg_write(codec, AIC26_REG_POWER_CTRL, 0);
+	msleep(5);
+	// Power down the VGND first
+	aic26_reg_write(codec, AIC26_REG_POWER_CTRL, 0x2FC0);
 
 	/* Audio Control 3 (master mode, fsref rate) */
 	reg = aic26_reg_read(codec, AIC26_REG_AUDIO_CTRL3);
 	reg &= ~0xf800;
 	reg |= 0x0800; /* set master mode */
 	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL3, reg);
+
+	// Enable DAC pop reduction features
+	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL5, 0xFE04);
+	// Set DAC pop reduction to slow and long options
+	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL4, 0x0030);
+
+#if machine_is_ti8148ipnc()
+	/* private initial */
+	aic26_reg_write(codec, AIC26_REG_ADC_GAIN   , 0x5F1F);
+	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL1, 0x013F);
+	aic26_reg_write(codec, AIC26_REG_DAC_GAIN   , 0x2020);
+	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL2, 0x441D);
+	aic26_reg_write(codec, AIC26_REG_POWER_CTRL , 0x2910);
+	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL3, 0x2830);
+	aic26_reg_write(codec, AIC26_REG_AUDIO_CTRL5, 0xBE04);
+#endif
 
 	/* Fill register cache */
 	for (i = 0; i < ARRAY_SIZE(aic26->reg_cache); i++)
@@ -387,6 +498,7 @@ static int aic26_probe(struct snd_soc_codec *codec)
 	err = snd_soc_add_controls(codec, aic26_snd_controls,
 			ARRAY_SIZE(aic26_snd_controls));
 	WARN_ON(err < 0);
+	aic26_add_widgets(codec);
 
 	return 0;
 }
@@ -407,6 +519,7 @@ static int aic26_spi_probe(struct spi_device *spi)
 {
 	struct aic26 *aic26;
 	int ret;
+	int bus_num, chip_sel;
 
 	dev_dbg(&spi->dev, "probing tlv320aic26 spi device\n");
 
@@ -419,6 +532,13 @@ static int aic26_spi_probe(struct spi_device *spi)
 	aic26->spi = spi;
 	dev_set_drvdata(&spi->dev, aic26);
 	aic26->master = 1;
+
+	/* make the codec work before there is a better way. */
+	 if(machine_is_ti8148ipnc()){
+		chip_sel = spi->chip_select;
+		bus_num = spi->master->bus_num;
+		dev_set_name(&spi->dev, "%d-%04x", bus_num, chip_sel);
+	 }
 
 	ret = snd_soc_register_codec(&spi->dev,
 			&aic26_soc_codec_dev, &aic26_dai, 1);

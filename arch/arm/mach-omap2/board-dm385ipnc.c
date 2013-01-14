@@ -245,7 +245,7 @@ static struct tps65910_board __refdata tps65911_pdata = {
 
 static struct i2c_board_info __initdata ti814x_i2c_boardinfo[] = {
 	{
-		I2C_BOARD_INFO("tlv320aic3x", 0x18),
+		I2C_BOARD_INFO("tlv320aic3104", 0x18),
 	},
 	{
 		I2C_BOARD_INFO("tps65911", 0x2D),

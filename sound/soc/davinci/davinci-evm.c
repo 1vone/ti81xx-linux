@@ -37,8 +37,18 @@
 #include "davinci-i2s.h"
 #include "davinci-mcasp.h"
 
-#define AUDIO_FORMAT (SND_SOC_DAIFMT_DSP_B | \
-		SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_IB_NF)
+static inline unsigned int get_audio_format(void)
+{
+#ifdef CONFIG_MACH_TI8148IPNC
+	if(omap_rev() == TI8148_REV_ES1_0)
+		return (SND_SOC_DAIFMT_DSP_B | \
+		        SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_IB_IF);
+	else
+#endif
+		return (SND_SOC_DAIFMT_DSP_B | \
+		        SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_IB_NF);
+}
+
 static int evm_hw_params(struct snd_pcm_substream *substream,
 			 struct snd_pcm_hw_params *params)
 {
@@ -64,7 +74,9 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
 				machine_is_davinci_da850_evm() ||
 				machine_is_ti8168evm() ||
 				machine_is_ti8148evm() ||
-				machine_is_dm385evm())
+				machine_is_ti8148ipnc() ||
+				machine_is_dm385evm() ||
+				machine_is_dm385ipnc())
 		sysclk = 24576000;
 
 	/*TI811x use McASP2_AUX 20MHz*/
@@ -75,12 +87,12 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 
 	/* set codec DAI configuration */
-	ret = snd_soc_dai_set_fmt(codec_dai, AUDIO_FORMAT);
+	ret = snd_soc_dai_set_fmt(codec_dai, get_audio_format());
 	if (ret < 0)
 		return ret;
 
 	/* set cpu DAI configuration */
-	ret = snd_soc_dai_set_fmt(cpu_dai, AUDIO_FORMAT);
+	ret = snd_soc_dai_set_fmt(cpu_dai, get_audio_format());
 	if (ret < 0)
 		return ret;
 
@@ -99,7 +111,7 @@ static int evm_spdif_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 
 	/* set cpu DAI configuration */
-	return snd_soc_dai_set_fmt(cpu_dai, AUDIO_FORMAT);
+	return snd_soc_dai_set_fmt(cpu_dai, get_audio_format());
 }
 
 static struct snd_soc_ops evm_ops = {
@@ -127,7 +139,10 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	/* Line Out connected to LLOUT, RLOUT */
 	{"Line Out", NULL, "LLOUT"},
 	{"Line Out", NULL, "RLOUT"},
-
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+	{"LINE1R", NULL, "Mic Bias 2.5V"},
+	{"Mic Bias 2.5V", NULL, "Mic Jack"},
+#else
 	/* Mic connected to (MIC3L | MIC3R) */
 	{"MIC3L", NULL, "Mic Bias 2V"},
 	{"MIC3R", NULL, "Mic Bias 2V"},
@@ -138,6 +153,7 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"LINE2L", NULL, "Line In"},
 	{"LINE1R", NULL, "Line In"},
 	{"LINE2R", NULL, "Line In"},
+#endif
 };
 
 /* Logic for a aic3x as connected on a davinci-evm */
@@ -161,10 +177,52 @@ static int evm_aic3x_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_enable_pin(codec, "Headphone Jack");
 	snd_soc_dapm_enable_pin(codec, "Line Out");
 	snd_soc_dapm_enable_pin(codec, "Mic Jack");
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 	snd_soc_dapm_enable_pin(codec, "Line In");
+#endif
 
 	snd_soc_dapm_sync(codec);
 
+	return 0;
+}
+
+/* davinci-evm machine dapm widgets */
+static const struct snd_soc_dapm_widget aic26_dapm_widgets[] = {
+	SND_SOC_DAPM_HP("Headphone Jack", NULL),
+	SND_SOC_DAPM_MIC("Mic Jack", NULL),
+};
+
+/* davinci-evm machine audio_mapnections to the codec pins */
+static const struct snd_soc_dapm_route aic26_audio_map[] = {
+	/* Headphone connected to HPLOUT, HPROUT */
+	{"Headphone Jack", NULL, "LHPOUT"},
+	{"Headphone Jack", NULL, "RHPOUT"},
+
+	/* Mic connected to MIC */
+	{"MICIN", NULL, "Mic Bias 2V"},
+	{"Mic Bias 2V", NULL, "Mic Jack"},
+};
+
+/* Logic for a aic3x as connected on a davinci-evm */
+static int ipnc_aic26_init(struct snd_soc_pcm_runtime *rtd)
+{
+	struct snd_soc_codec *codec = rtd->codec;
+
+	/* Add davinci-evm specific widgets */
+	snd_soc_dapm_new_controls(codec, aic26_dapm_widgets,
+				  ARRAY_SIZE(aic26_dapm_widgets));
+
+	/* Set up davinci-evm specific audio path audio_map */
+	snd_soc_dapm_add_routes(codec, aic26_audio_map, ARRAY_SIZE(aic26_audio_map));
+
+	/* not connected */
+	snd_soc_dapm_disable_pin(codec, "AUXIN");
+
+	/* always connected */
+	snd_soc_dapm_enable_pin(codec, "Headphone Jack");
+	snd_soc_dapm_enable_pin(codec, "Mic Jack");
+
+	snd_soc_dapm_sync(codec);
 	return 0;
 }
 
@@ -264,6 +322,29 @@ static struct snd_soc_dai_link ti81xx_evm_dai[] = {
 #endif
 };
 
+static struct snd_soc_dai_link ti81xx_ipnc_dai[] = {
+	{
+	.name = "TLV320AIC26",
+	.stream_name = "AIC26",
+	.cpu_dai_name = "davinci-mcasp.2",
+	.codec_dai_name = "tlv320aic26-hifi",
+	.codec_name = "tlv320aic26-codec.1-0000",
+	.platform_name = "davinci-pcm-audio",
+	.init = ipnc_aic26_init,
+	.ops = &evm_ops,
+	},
+#ifdef CONFIG_SND_SOC_TI81XX_HDMI
+	{
+		.name = "HDMI_SOC_LINK",
+		.stream_name = "hdmi",
+		.cpu_dai_name = "hdmi-dai",
+		.platform_name = "davinci-pcm-audio",
+		.codec_dai_name = "HDMI-DAI-CODEC",     /* DAI name */
+		.codec_name = "hdmi-dummy-codec",
+	},
+#endif
+};
+
 /* davinci dm6446 evm audio machine driver */
 static struct snd_soc_card dm6446_snd_soc_card_evm = {
 	.name = "DaVinci DM6446 EVM",
@@ -310,12 +391,18 @@ static struct snd_soc_card ti81xx_snd_soc_card = {
 	.num_links = ARRAY_SIZE(ti81xx_evm_dai),
 };
 
+static struct snd_soc_card ti8148_snd_soc_card = {
+	.name = "TI8148 IPNC",
+	.dai_link = ti81xx_ipnc_dai,
+	.num_links = ARRAY_SIZE(ti81xx_ipnc_dai),
+};
+
 static void ti81xx_evm_dai_fixup(void)
 {
 	if (machine_is_ti8168evm() || machine_is_ti8148evm() 
-				||  machine_is_ti811xevm()) {
+		|| machine_is_ti8148ipnc() ||  machine_is_ti811xevm()) {
 		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.2";
-	} else if (machine_is_dm385evm()) {
+	} else if (machine_is_dm385evm() || machine_is_dm385ipnc()) {
 		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.1";
 	} else {
 		ti81xx_evm_dai[0].cpu_dai_name = NULL;
@@ -348,10 +435,17 @@ static int __init evm_init(void)
 		evm_snd_dev_data = &da850_snd_soc_card;
 		index = 0;
 	} else if (machine_is_ti8168evm() || machine_is_ti8148evm()
-					|| machine_is_dm385evm() 
-					|| machine_is_ti811xevm()) {
+					|| machine_is_dm385evm()
+					|| machine_is_dm385ipnc()
+                                        || machine_is_ti811xevm()) {
 		ti81xx_evm_dai_fixup();
 		evm_snd_dev_data = &ti81xx_snd_soc_card;
+		index = 0;
+	} else if (machine_is_ti8148ipnc()) {
+		ti81xx_evm_dai_fixup();
+		evm_snd_dev_data = &ti8148_snd_soc_card;
+		if(omap_rev() != TI8148_REV_ES1_0)
+			evm_snd_dev_data->dai_link = ti81xx_evm_dai;
 		index = 0;
 	} else
 		return -EINVAL;

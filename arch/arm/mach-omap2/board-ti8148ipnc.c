@@ -49,6 +49,9 @@
 #ifdef CONFIG_HAVE_PWM
 #include <plat/pwm.h>
 #endif
+#ifdef CONFIG_SND_SOC_TLV320AIC3X
+#include <sound/tlv320aic3x.h>
+#endif
 #include "board-flash.h"
 #include "clock.h"
 #include "mux.h"
@@ -79,6 +82,11 @@ static struct at24_platform_data eeprom_info = {
 	.byte_len       = (256*1024) / 8,
 	.page_size      = 64,
 	.flags          = AT24_FLAG_ADDR16,
+};
+#endif
+#ifdef CONFIG_SND_SOC_TLV320AIC3X
+static struct aic3x_pdata dm8148ipnc_aic3x_data = {
+	.gpio_reset = 8,
 };
 #endif
 
@@ -251,9 +259,12 @@ static struct tps65910_board __refdata tps65911_pdata = {
 };
 
 static struct i2c_board_info __initdata ti814x_i2c_boardinfo[] = {
+#ifdef CONFIG_SND_SOC_TLV320AIC3X
 	{
-		I2C_BOARD_INFO("tlv320aic3x", 0x18),
+		I2C_BOARD_INFO("tlv320aic3104", 0x18),
+		.platform_data = &dm8148ipnc_aic3x_data,
 	},
+#endif
 	{
 		I2C_BOARD_INFO("tps65911", 0x2D),
 		.platform_data = &tps65911_pdata,
@@ -336,53 +347,14 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 	},
 };
 
-/* SPI fLash information */
-struct mtd_partition ti8148_spi_partitions[] = {
-	/* All the partition sizes are listed in terms of erase size */
-	{
-		.name		= "U-Boot-min",
-		.offset		= 0,	/* Offset = 0x0 */
-		.size		= 32 * SZ_4K,
-		.mask_flags	= MTD_WRITEABLE, /* force read-only */
-	},
-	{
-		.name		= "U-Boot",
-		.offset		= MTDPART_OFS_APPEND, /* 0x0 + (32*4K) */
-		.size		= 64 * SZ_4K,
-		.mask_flags	= MTD_WRITEABLE, /* force read-only */
-	},
-	{
-		.name		= "U-Boot Env",
-		.offset		= MTDPART_OFS_APPEND, /* 0x40000 + (32*4K) */
-		.size		= 2 * SZ_4K,
-	},
-	{
-		.name		= "Kernel",
-		.offset		= MTDPART_OFS_APPEND, /* 0x42000 + (32*4K) */
-		.size		= 640 * SZ_4K,
-	},
-	{
-		.name		= "File System",
-		.offset		= MTDPART_OFS_APPEND, /* 0x2C2000 + (32*4K) */
-		.size		= MTDPART_SIZ_FULL, /* size ~= 1.1 MiB */
-	}
-};
-
-const struct flash_platform_data ti8148_spi_flash = {
-	.type		= "w25x32",
-	.name		= "spi_flash",
-	.parts		= ti8148_spi_partitions,
-	.nr_parts	= ARRAY_SIZE(ti8148_spi_partitions),
-};
-
 struct spi_board_info __initdata ti8148_spi_slave_info[] = {
 	{
-		.modalias	= "m25p80",
-		.platform_data	= &ti8148_spi_flash,
+		.modalias	= "tlv320aic26-codec",
 		.irq		= -1,
-		.max_speed_hz	= 75000000,
+		.max_speed_hz	= 100000,
 		.bus_num	= 1,
 		.chip_select	= 0,
+		.mode = SPI_MODE_1,
 	},
 };
 

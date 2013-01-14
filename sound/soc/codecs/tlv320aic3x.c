@@ -83,6 +83,7 @@ struct aic3x_priv {
 #define AIC3X_MODEL_3X 0
 #define AIC3X_MODEL_33 1
 #define AIC3X_MODEL_3007 2
+#define AIC3X_MODEL_3104 3
 	u16 model;
 };
 
@@ -1305,17 +1306,21 @@ static int aic3x_init(struct snd_soc_codec *codec)
 	/* DAC to Line Out default volume and route to Output mixer */
 	snd_soc_write(codec, DACL1_2_LLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
 	snd_soc_write(codec, DACR1_2_RLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
-	/* DAC to Mono Line Out default volume and route to Output mixer */
-	snd_soc_write(codec, DACL1_2_MONOLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
-	snd_soc_write(codec, DACR1_2_MONOLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
+	if (aic3x->model != AIC3X_MODEL_3104) {
+		/* DAC to Mono Line Out default volume and route to Output mixer */
+		snd_soc_write(codec, DACL1_2_MONOLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
+		snd_soc_write(codec, DACR1_2_MONOLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
+	}
 
 	/* unmute all outputs */
 	reg = snd_soc_read(codec, LLOPM_CTRL);
 	snd_soc_write(codec, LLOPM_CTRL, reg | UNMUTE);
 	reg = snd_soc_read(codec, RLOPM_CTRL);
 	snd_soc_write(codec, RLOPM_CTRL, reg | UNMUTE);
-	reg = snd_soc_read(codec, MONOLOPM_CTRL);
-	snd_soc_write(codec, MONOLOPM_CTRL, reg | UNMUTE);
+	if (aic3x->model != AIC3X_MODEL_3104) {
+		reg = snd_soc_read(codec, MONOLOPM_CTRL);
+		snd_soc_write(codec, MONOLOPM_CTRL, reg | UNMUTE);
+	}
 	reg = snd_soc_read(codec, HPLOUT_CTRL);
 	snd_soc_write(codec, HPLOUT_CTRL, reg | UNMUTE);
 	reg = snd_soc_read(codec, HPROUT_CTRL);
@@ -1340,21 +1345,23 @@ static int aic3x_init(struct snd_soc_codec *codec)
 	/* PGA to Line Out default volume, disconnect from Output Mixer */
 	snd_soc_write(codec, PGAL_2_LLOPM_VOL, DEFAULT_VOL);
 	snd_soc_write(codec, PGAR_2_RLOPM_VOL, DEFAULT_VOL);
-	/* PGA to Mono Line Out default volume, disconnect from Output Mixer */
-	snd_soc_write(codec, PGAL_2_MONOLOPM_VOL, DEFAULT_VOL);
-	snd_soc_write(codec, PGAR_2_MONOLOPM_VOL, DEFAULT_VOL);
+	if (aic3x->model != AIC3X_MODEL_3104) {
+		/* PGA to Mono Line Out default volume, disconnect from Output Mixer */
+		snd_soc_write(codec, PGAL_2_MONOLOPM_VOL, DEFAULT_VOL);
+		snd_soc_write(codec, PGAR_2_MONOLOPM_VOL, DEFAULT_VOL);
 
-	/* Line2 to HP Bypass default volume, disconnect from Output Mixer */
-	snd_soc_write(codec, LINE2L_2_HPLOUT_VOL, DEFAULT_VOL);
-	snd_soc_write(codec, LINE2R_2_HPROUT_VOL, DEFAULT_VOL);
-	snd_soc_write(codec, LINE2L_2_HPLCOM_VOL, DEFAULT_VOL);
-	snd_soc_write(codec, LINE2R_2_HPRCOM_VOL, DEFAULT_VOL);
-	/* Line2 Line Out default volume, disconnect from Output Mixer */
-	snd_soc_write(codec, LINE2L_2_LLOPM_VOL, DEFAULT_VOL);
-	snd_soc_write(codec, LINE2R_2_RLOPM_VOL, DEFAULT_VOL);
-	/* Line2 to Mono Out default volume, disconnect from Output Mixer */
-	snd_soc_write(codec, LINE2L_2_MONOLOPM_VOL, DEFAULT_VOL);
-	snd_soc_write(codec, LINE2R_2_MONOLOPM_VOL, DEFAULT_VOL);
+		/* Line2 to HP Bypass default volume, disconnect from Output Mixer */
+		snd_soc_write(codec, LINE2L_2_HPLOUT_VOL, DEFAULT_VOL);
+		snd_soc_write(codec, LINE2R_2_HPROUT_VOL, DEFAULT_VOL);
+		snd_soc_write(codec, LINE2L_2_HPLCOM_VOL, DEFAULT_VOL);
+		snd_soc_write(codec, LINE2R_2_HPRCOM_VOL, DEFAULT_VOL);
+		/* Line2 Line Out default volume, disconnect from Output Mixer */
+		snd_soc_write(codec, LINE2L_2_LLOPM_VOL, DEFAULT_VOL);
+		snd_soc_write(codec, LINE2R_2_RLOPM_VOL, DEFAULT_VOL);
+		/* Line2 to Mono Out default volume, disconnect from Output Mixer */
+		snd_soc_write(codec, LINE2L_2_MONOLOPM_VOL, DEFAULT_VOL);
+		snd_soc_write(codec, LINE2R_2_MONOLOPM_VOL, DEFAULT_VOL);
+	}
 
 	if (aic3x->model == AIC3X_MODEL_3007) {
 		aic3x_init_3007(codec);
@@ -1480,6 +1487,7 @@ static const struct i2c_device_id aic3x_i2c_id[] = {
 	[AIC3X_MODEL_3X] = { "tlv320aic3x", 0 },
 	[AIC3X_MODEL_33] = { "tlv320aic33", 0 },
 	[AIC3X_MODEL_3007] = { "tlv320aic3007", 0 },
+	[AIC3X_MODEL_3104] = { "tlv320aic3104", 0 },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, aic3x_i2c_id);
