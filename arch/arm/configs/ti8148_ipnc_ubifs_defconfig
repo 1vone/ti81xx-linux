@@ -1,8 +1,4 @@
 #
-# Automatically generated make config: don't edit
-# Linux/arm 2.6.37 Kernel Configuration
-# Thu Nov  3 12:20:09 2011
-#
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -989,7 +985,6 @@ CONFIG_GPIOLIB=y
 #
 # CONFIG_GPIO_BASIC_MMIO is not set
 # CONFIG_GPIO_IT8761E is not set
-# CONFIG_GPIO_SCH is not set
 # CONFIG_GPIO_VX855 is not set
 
 #
@@ -998,7 +993,7 @@ CONFIG_GPIOLIB=y
 # CONFIG_GPIO_MAX7300 is not set
 # CONFIG_GPIO_MAX732X is not set
 # CONFIG_GPIO_PCA953X is not set
-CONFIG_GPIO_PCF857X=y
+# CONFIG_GPIO_PCF857X is not set
 # CONFIG_GPIO_SX150X is not set
 # CONFIG_GPIO_ADP5588 is not set
 
@@ -1180,7 +1175,7 @@ CONFIG_VIDEO_CAPTURE_DRIVERS=y
 # CONFIG_VIDEO_SAA7191 is not set
 # CONFIG_VIDEO_TVP514X is not set
 # CONFIG_VIDEO_TVP5150 is not set
-CONFIG_VIDEO_TVP7002=m
+# CONFIG_VIDEO_TVP7002 is not set
 # CONFIG_VIDEO_VPX3220 is not set
 
 #

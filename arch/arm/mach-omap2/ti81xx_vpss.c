@@ -60,6 +60,7 @@ static int __init ti81xx_vpss_init(void)
 	if (cpu_is_ti816x() || cpu_is_dm385()) {
 		if (cpu_is_dm385()) {
 			vps_pdata.cpu = CPU_DM813X;
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 			/*setup the ths filter functioin*/
 			vps_pdata.pcf_ths_init = dm813x_pcf8575_init;
 			vps_pdata.pcf_ths_exit = dm813x_pcf8575_exit;
@@ -67,13 +68,16 @@ static int __init ti81xx_vpss_init(void)
 					dm813x_pcf8575_ths7360_hd_enable;
 			vps_pdata.pcf_ths_sd_set =
 					dm813x_pcf8575_ths7360_sd_enable;
+#endif
 		} else {
 			vps_pdata.cpu = CPU_DM816X;
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 			/*setup the ths filter functioin*/
 			vps_pdata.pcf_ths_init = ti816x_pcf8575_init;
 			vps_pdata.pcf_ths_exit = ti816x_pcf8575_exit;
 			vps_pdata.pcf_ths_hd_set = pcf8575_ths7360_hd_enable;
 			vps_pdata.pcf_ths_sd_set = pcf8575_ths7360_sd_enable;
+#endif
 		}
 		vps_pdata.numvencs = 4;
 		vps_pdata.vencmask = (1 << VPS_DC_MAX_VENC) - 1;
@@ -82,21 +86,25 @@ static int __init ti81xx_vpss_init(void)
 		vps_pdata.numvencs = 3;
 		vps_pdata.vencmask = (1 << VPS_DC_MAX_VENC) - 1 \
 					- VPS_DC_VENC_HDCOMP;
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 		/*setup the ths filter functioin*/
 		vps_pdata.pcf_ths_init = ti811x_pcf8575_init;
 		vps_pdata.pcf_ths_exit = ti811x_pcf8575_exit;
 		vps_pdata.pcf_ths_hd_set = NULL;
 		vps_pdata.pcf_ths_sd_set = NULL;
+#endif
 	} else if (cpu_is_ti814x()) {
 		vps_pdata.cpu = CPU_DM814X;
 		vps_pdata.numvencs = 3;
 		vps_pdata.vencmask = (1 << VPS_DC_MAX_VENC) - 1 \
 					- VPS_DC_VENC_HDCOMP;
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 		/*setup the ths filter functioin*/
 		vps_pdata.pcf_ths_init = ti814x_pcf8575_init;
 		vps_pdata.pcf_ths_exit = ti814x_pcf8575_exit;
 		vps_pdata.pcf_ths_hd_set = NULL;
 		vps_pdata.pcf_ths_sd_set = NULL;
+#endif
 	}
 
 	/*set up the grpx connections*/

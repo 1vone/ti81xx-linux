@@ -24,7 +24,6 @@
 #include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/i2c/at24.h>
-#include <linux/i2c/qt602240_ts.h>
 #include <linux/regulator/machine.h>
 #include <linux/mfd/tps65910.h>
 #include <linux/clk.h>
@@ -78,24 +77,6 @@ static struct omap2_hsmmc_info mmc[] = {
 		.ocr_mask	= MMC_VDD_33_34,
 	},
 	{}	/* Terminator */
-};
-
-/* Touchscreen platform data */
-static struct qt602240_platform_data ts_platform_data = {
-	.x_line		= 18,
-	.y_line		= 12,
-	.x_size		= 800,
-	.y_size		= 480,
-	.blen		= 0x01,
-	.threshold	= 30,
-	.voltage	= 2800000,
-	.orient		= QT602240_HORIZONTAL_FLIP,
-};
-
-static struct at24_platform_data eeprom_info = {
-	.byte_len       = (256*1024) / 8,
-	.page_size      = 64,
-	.flags          = AT24_FLAG_ADDR16,
 };
 
 static struct regulator_consumer_supply dm385evm_mpu_supply =
@@ -268,257 +249,13 @@ static struct tps65910_board __refdata tps65911_pdata = {
 
 static struct i2c_board_info __initdata ti814x_i2c_boardinfo[] = {
 	{
-		I2C_BOARD_INFO("eeprom", 0x50),
-		.platform_data	= &eeprom_info,
-	},
-	{
-		I2C_BOARD_INFO("cpld", 0x23),
-	},
-	{
 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
-	},
-	{
-		I2C_BOARD_INFO("IO Expander", 0x20),
-	},
-	{
-		I2C_BOARD_INFO("tlc59108", 0x40),
-	},
-	{
-		I2C_BOARD_INFO("qt602240_ts", 0x4A),
-		.platform_data = &ts_platform_data,
 	},
 	{
 		I2C_BOARD_INFO("tps65911", 0x2D),
 		.platform_data = &tps65911_pdata,
 	},
 };
-
-static struct i2c_board_info __initdata dm813x_i2c_boardinfo1[] = {
-	{
-		I2C_BOARD_INFO("pcf8575_1_dm813x", 0x20),
-	},
-
-};
-
-
-static const struct i2c_device_id ti813x_pcf8575_cir_id[] = {
-	{ "IO Expander", 0 },
-	{ }
-};
-static struct i2c_client *ti813x_pcf8575_cir_client;
-static unsigned char ti813x_pcf8575_cir_port[2] = {0, 0xbf};
-static int ti813x_pcf8575_cir_enable(void);
-static int ti813x_pcf8575_cir_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
-{
-	ti813x_pcf8575_cir_client = client;
-	ti813x_pcf8575_cir_enable();
-	return 0;
-}
-
-static int __devexit ti813x_pcf8575_cir_remove(struct i2c_client *client)
-{
-	ti813x_pcf8575_cir_client = NULL;
-	return 0;
-}
-static struct i2c_driver ti813x_pcf8575_cir_driver = {
-	.driver = {
-		.name	= "IO Expander",
-	},
-	.probe		= ti813x_pcf8575_cir_probe,
-	.remove		= ti813x_pcf8575_cir_remove,
-	.id_table		= ti813x_pcf8575_cir_id,
-};
-int ti813x_pcf8575_cir_init(void)
-{
-
-	i2c_add_driver(&ti813x_pcf8575_cir_driver);
-	return 0;
-}
-
-int ti813x_cir_exit(void)
-{
-	i2c_del_driver(&ti813x_pcf8575_cir_driver);
-	return 0;
-}
-
-static const struct i2c_device_id pcf8575_video_id[] = {
-	{ "pcf8575_1_dm813x", 0 },
-	{ }
-};
-static struct i2c_client *pcf8575_1_client;
-static unsigned char pcf8575_1_port[2] = {0x4F, 0x7F};
-
-#define VPS_PCF8575_PIN0                (0x20)
-#define VPS_PCF8575_PIN1                (0x10)
-#define VPS_PCF8575_PIN2                (0x4)
-#define VPS_PCF8575_PIN3                (0x8)
-#define VPS_PCF8575_PIN4                (0x2)
-#define VPS_PCF8575_PIN5                (0x1)
-#define VPS_PCF8575_PIN6                (0x40)
-#define VPS_PCF8575_PIN7                (0x80)
-
-#define pcf8575_IR_REMOTE_OFF		(0x40)
-#define VPS_PCF8575_PIN10               (0x1)
-#define VPS_PCF8575_PIN11               (0x2)
-
-#define VPS_THS7375_MASK                (VPS_PCF8575_PIN10 | VPS_PCF8575_PIN11)
-
-#define VPS_THS7360_SD_MASK             (VPS_PCF8575_PIN2 | VPS_PCF8575_PIN5)
-
-#define VPS_THS7360_SF_MASK             (VPS_PCF8575_PIN0 |                    \
-					VPS_PCF8575_PIN1 |                    \
-					VPS_PCF8575_PIN3 |                    \
-					VPS_PCF8575_PIN4)
-int dm813x_pcf8575_ths7360_sd_enable(enum ti81xx_ths_filter_ctrl ctrl)
-{
-	struct i2c_msg msg = {
-		.addr = pcf8575_1_client->addr,
-		.flags = 0,
-		.len = 2,
-	};
-	pcf8575_1_port[0] &= ~VPS_THS7360_SD_MASK;
-	switch (ctrl) {
-	case TI81XX_THSFILTER_ENABLE_MODULE:
-		pcf8575_1_port[0] &= ~(VPS_THS7360_SD_MASK);
-		break;
-	case TI81XX_THSFILTER_BYPASS_MODULE:
-		pcf8575_1_port[0] |= VPS_PCF8575_PIN2;
-		break;
-	case TI81XX_THSFILTER_DISABLE_MODULE:
-		pcf8575_1_port[0] |= VPS_THS7360_SD_MASK;
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	msg.buf = pcf8575_1_port;
-	return i2c_transfer(pcf8575_1_client->adapter, &msg, 1);
-}
-
-static void ti813x_cir_pin_mux(void)
-{
-	char mux_name[100];
-	sprintf(mux_name, "uart0_rin.uart1_rxd_mux0");
-	omap_mux_init_signal(mux_name, OMAP_MUX_MODE0 |
-			TI814X_PULL_DIS | TI814X_INPUT_EN);
-	return;
-}
-
-int ti813x_pcf8575_cir_enable(void)
-{
-	int ret = 0;
-	struct i2c_msg msg = {
-		.addr = ti813x_pcf8575_cir_client->addr,
-		.flags = 1,
-		.len = 2,
-	};
-	msg.buf = ti813x_pcf8575_cir_port;
-	ret = i2c_transfer(ti813x_pcf8575_cir_client->adapter, &msg, 1);
-	msg.flags = 0;
-	if (ret < 0)
-		printk(KERN_ERR "I2C: Read failed at %s %d with error code: %d\n",
-			__func__, __LINE__, ret);
-	ti813x_pcf8575_cir_port[0] = msg.buf[0];
-	ti813x_pcf8575_cir_port[1] = (msg.buf[1] & ~(pcf8575_IR_REMOTE_OFF));
-	ret = i2c_transfer(ti813x_pcf8575_cir_client->adapter, &msg, 1);
-	ti813x_cir_pin_mux();
-	if (ret < 0)
-		printk(KERN_ERR "I2C: Transfer failed at %s %d with error code: %d\n",
-			__func__, __LINE__, ret);
-	return ret;
-
-}
-int dm813x_pcf8575_ths7360_hd_enable(enum ti81xx_ths7360_sf_ctrl ctrl)
-{
-	int ret_val;
-	struct i2c_msg msg = {
-		.addr = pcf8575_1_client->addr,
-		.flags = 0,
-		.len = 2,
-	};
-
-	pcf8575_1_port[0] &= ~VPS_THS7360_SF_MASK;
-	switch (ctrl) {
-	case TI81XX_THS7360_DISABLE_SF:
-		pcf8575_1_port[0] |= VPS_PCF8575_PIN4;
-		break;
-	case TI81XX_THS7360_BYPASS_SF:
-		pcf8575_1_port[0] |= VPS_PCF8575_PIN3;
-		break;
-	case TI81XX_THS7360_SF_SD_MODE:
-		pcf8575_1_port[0] &= ~(VPS_THS7360_SF_MASK);
-		break;
-	case TI81XX_THS7360_SF_ED_MODE:
-		pcf8575_1_port[0] |= VPS_PCF8575_PIN0;
-		break;
-	case TI81XX_THS7360_SF_HD_MODE:
-		pcf8575_1_port[0] |= VPS_PCF8575_PIN1;
-		break;
-	case TI81XX_THS7360_SF_TRUE_HD_MODE:
-		pcf8575_1_port[0] |= VPS_PCF8575_PIN0|VPS_PCF8575_PIN1;
-		break;
-	default:
-		return -EINVAL;
-	}
-	msg.buf = pcf8575_1_port;
-
-	ret_val = i2c_transfer(pcf8575_1_client->adapter, &msg, 1);
-	return ret_val;
-
-}
-static int pcf8575_video_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
-{
-	pcf8575_1_client = client;
-	return 0;
-}
-
-static int __devexit pcf8575_video_remove(struct i2c_client *client)
-{
-	pcf8575_1_client = NULL;
-	return 0;
-}
-
-static struct i2c_driver pcf8575_driver = {
-	.driver = {
-		.name   = "pcf8575_1_dm813x",
-	},
-	.probe          = pcf8575_video_probe,
-	.remove         = pcf8575_video_remove,
-	.id_table       = pcf8575_video_id,
-};
-
-int dm813x_pcf8575_init(void)
-{
-	i2c_add_driver(&pcf8575_driver);
-	return 0;
-}
-
-int dm813x_pcf8575_exit(void)
-{
-	i2c_del_driver(&pcf8575_driver);
-	return 0;
-}
-
-static void __init ti814x_tsc_init(void)
-{
-	int error;
-
-	omap_mux_init_signal("mlb_clk.gpio0_31", TI814X_PULL_DIS | (1 << 18));
-
-	error = gpio_request(GPIO_TSC, "ts_irq");
-	if (error < 0) {
-		printk(KERN_ERR "%s: failed to request GPIO for TSC IRQ"
-			": %d\n", __func__, error);
-		return;
-	}
-
-	gpio_direction_input(GPIO_TSC);
-	ti814x_i2c_boardinfo[6].irq = gpio_to_irq(GPIO_TSC);
-
-	gpio_export(31, true);
-}
 
 static void __init ti814x_evm_i2c_init(void)
 {
@@ -527,9 +264,6 @@ static void __init ti814x_evm_i2c_init(void)
 	 */
 	omap_register_i2c_bus(1, 100, ti814x_i2c_boardinfo,
 				ARRAY_SIZE(ti814x_i2c_boardinfo));
-	omap_register_i2c_bus(3, 100, dm813x_i2c_boardinfo1,
-				ARRAY_SIZE(dm813x_i2c_boardinfo1));
-
 }
 
 static u8 dm385_iis_serializer_direction[] = {
@@ -596,62 +330,6 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 		.size           = MTDPART_SIZ_FULL,
 	},
 };
-
-/* SPI fLash information */
-struct mtd_partition dm385_spi_partitions[] = {
-	/* All the partition sizes are listed in terms of erase size */
-	{
-		.name		= "U-Boot-min",
-		.offset		= 0,	/* Offset = 0x0 */
-		.size		= 32 * SZ_4K,
-		.mask_flags	= MTD_WRITEABLE, /* force read-only */
-	},
-	{
-		.name		= "U-Boot",
-		.offset		= MTDPART_OFS_APPEND, /* 0x0 + (32*4K) */
-		.size		= 64 * SZ_4K,
-		.mask_flags	= MTD_WRITEABLE, /* force read-only */
-	},
-	{
-		.name		= "U-Boot Env",
-		.offset		= MTDPART_OFS_APPEND, /* 0x40000 + (32*4K) */
-		.size		= 2 * SZ_4K,
-	},
-	{
-		.name		= "Kernel",
-		.offset		= MTDPART_OFS_APPEND, /* 0x42000 + (32*4K) */
-		.size		= 640 * SZ_4K,
-	},
-	{
-		.name		= "File System",
-		.offset		= MTDPART_OFS_APPEND, /* 0x2C2000 + (32*4K) */
-		.size		= MTDPART_SIZ_FULL, /* size ~= 1.1 MiB */
-	}
-};
-
-const struct flash_platform_data dm385_spi_flash = {
-	.type		= "w25x32",
-	.name		= "spi_flash",
-	.parts		= dm385_spi_partitions,
-	.nr_parts	= ARRAY_SIZE(dm385_spi_partitions),
-};
-
-struct spi_board_info __initdata dm385_spi_slave_info[] = {
-	{
-		.modalias	= "m25p80",
-		.platform_data	= &dm385_spi_flash,
-		.irq		= -1,
-		.max_speed_hz	= 75000000,
-		.bus_num	= 1,
-		.chip_select	= 0,
-	},
-};
-
-void __init dm385_spi_init(void)
-{
-	spi_register_board_info(dm385_spi_slave_info,
-				ARRAY_SIZE(dm385_spi_slave_info));
-}
 
 static struct omap_musb_board_data musb_board_data = {
 	.interface_type		= MUSB_INTERFACE_ULPI,
@@ -749,7 +427,6 @@ static void __init dm385_evm_init(void)
 
 	ti814x_mux_init(board_mux);
 	omap_serial_init();
-	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
 	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
 
@@ -772,7 +449,6 @@ static void __init dm385_evm_init(void)
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);
 
-	dm385_spi_init();
 #ifdef CONFIG_SND_SOC_TI81XX_HDMI
 	/* hdmi mclk setup */
 	ti813x_hdmi_clk_init();
@@ -782,7 +458,6 @@ static void __init dm385_evm_init(void)
 #ifdef CONFIG_HAVE_PWM
 	omap_register_pwm_config(dm385_ipnc_pwm_cfg, ARRAY_SIZE(dm385_ipnc_pwm_cfg));
 #endif
-	ti813x_pcf8575_cir_init();
 }
 
 static void __init dm385_evm_map_io(void)
