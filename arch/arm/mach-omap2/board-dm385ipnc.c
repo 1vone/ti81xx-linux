@@ -27,6 +27,7 @@
 #include <linux/i2c/at24.h>
 #include <linux/regulator/machine.h>
 #include <linux/mfd/tps65910.h>
+#include <linux/wl12xx.h>
 #include <linux/clk.h>
 #include <linux/err.h>
 
@@ -66,10 +67,26 @@ static struct omap_board_mux board_mux[] __initdata = {
 #endif
 
 static struct omap2_hsmmc_info mmc[] = {
-	{
+       {
+#ifdef CONFIG_WL12XX_PLATFORM_DATA
+/* WLAN_EN is GP2[22] */
+#define GPIO_WLAN_EN	((2 * 32) + 22)
+/* WLAN_IRQ is GP2[24] */
+#define GPIO_WLAN_IRQ	((2 * 32) + 24)
 		.mmc		= 1,
+		.caps		= MMC_CAP_4_BIT_DATA | MMC_CAP_POWER_OFF_CARD,
+		.gpio_cd	= -EINVAL,
+		.gpio_wp	= -EINVAL,
+		.ocr_mask	= MMC_VDD_165_195,
+		.nonremovable	= true,
+	},
+	{
+		.mmc            = 2,
+#else
+        .mmc            = 1,
+#endif
 		.caps		= MMC_CAP_4_BIT_DATA | MMC_CAP_NEEDS_POLL,
-		.gpio_cd	= GPIO_TO_PIN(1, 6), /* Dedicated pins for CD and WP */
+		.gpio_cd	= -EINVAL, /* Dedicated pins for CD and WP */
 		.gpio_wp	= -EINVAL,
 		.ocr_mask	= MMC_VDD_33_34,
 	},
@@ -417,7 +434,111 @@ void __init ti813x_hdmi_clk_init(void)
 	pr_debug("{{HDMI Audio MCLK setup completed}}\n");
 }
 #endif
+#ifdef CONFIG_WL12XX_PLATFORM_DATA
 
+static struct wl12xx_platform_data wlan_data __initdata = {
+	.irq = OMAP_GPIO_IRQ(GPIO_WLAN_IRQ),
+	/* COM6 (127x) uses FREF */
+	.board_ref_clock = WL12XX_REFCLOCK_38_XTAL,
+	/* COM7 (128x) uses TCXO */
+	.board_tcxo_clock = WL12XX_TCXOCLOCK_26,
+};
+
+static int wl12xx_set_power(struct device *dev, int slot, int power_on,
+			    int vdd)
+{
+	static bool power_state;
+
+	pr_debug("Powering %s wl12xx", power_on ? "on" : "off");
+
+	if (power_on == power_state)
+		return 0;
+	power_state = power_on;
+
+	if (power_on) {
+		/* Power up sequence required for wl127x devices */
+		gpio_set_value(GPIO_WLAN_EN, 1);
+		usleep_range(15000, 15000);
+		gpio_set_value(GPIO_WLAN_EN, 0);
+		usleep_range(1000, 1000);
+		gpio_set_value(GPIO_WLAN_EN, 1);
+		msleep(70);
+	} else {
+		gpio_set_value(GPIO_WLAN_EN, 0);
+	}
+
+	return 0;
+}
+
+static void __init ti814x_wl12xx_wlan_init(void)
+{
+	struct device *dev;
+	struct omap_mmc_platform_data *pdata;
+	int ret;
+
+	/* Set up mmc0 muxes */
+	omap_mux_init_signal("mmc0_clk", TI814X_INPUT_EN | TI814X_PULL_UP);
+	omap_mux_init_signal("mmc0_cmd", TI814X_INPUT_EN | TI814X_PULL_UP);
+	omap_mux_init_signal("mmc0_dat0", TI814X_INPUT_EN | TI814X_PULL_UP);
+	omap_mux_init_signal("mmc0_dat1", TI814X_INPUT_EN | TI814X_PULL_UP);
+	omap_mux_init_signal("mmc0_dat2", TI814X_INPUT_EN | TI814X_PULL_UP);
+	omap_mux_init_signal("mmc0_dat3", TI814X_INPUT_EN | TI814X_PULL_UP);
+
+        /* Set up the WLAN_EN and WLAN_IRQ muxes */
+        //gpio1_15_mux1 is good for application daughter board
+        omap_mux_init_signal("gpio2_22", TI814X_PULL_DIS);
+        omap_mux_init_signal("gpio2_24", TI814X_INPUT_EN | TI814X_PULL_DIS);
+	/* Pass the wl12xx platform data information to the wl12xx driver */
+	if (wl12xx_set_platform_data(&wlan_data)) {
+		pr_err("Error setting wl12xx data\n");
+		return;
+	}
+
+	/*
+	 * The WLAN_EN gpio has to be toggled without using a fixed regulator,
+	 * as the omap_hsmmc does not enable/disable regulators on the TI814X.
+	 */
+	ret = gpio_request_one(GPIO_WLAN_EN, GPIOF_OUT_INIT_LOW, "wlan_en");
+	if (ret) {
+		pr_err("Error requesting wlan enable gpio: %d\n", ret);
+		return;
+	}
+
+	/*
+	 * Set our set_power callback function which will be called from
+	 * set_ios. This is requireq since, unlike other omap2+ platforms, a
+	 * no-op set_power function is registered. Thus, we cannot use a fixed
+	 * regulator, as it will never be toggled.
+	 * Moreover, even if this was not the case, we're on mmc0, for which
+	 * omap_hsmmc' set_power functions do not toggle any regulators.
+	 * TODO: Consider modifying omap_hsmmc so it would enable/disable a
+	 * regulator for ti814x/mmc0.
+	 */
+	dev = mmc[0].dev;
+	if (!dev) {
+		pr_err("wl12xx mmc device initialization failed\n");
+		return;
+	}
+
+	pdata = dev->platform_data;
+	if (!pdata) {
+		pr_err("Platform data of wl12xx device not set\n");
+		return;
+	}
+
+	pdata->slots[0].set_power = wl12xx_set_power;
+}
+
+static void __init ti814x_wl12xx_init(void)
+{
+	ti814x_wl12xx_wlan_init();
+}
+
+#else /* CONFIG_WL12XX_PLATFORM_DATA */
+
+static void __init ti814x_wl12xx_init(void) { }
+
+#endif
 static void __init dm385_evm_init(void)
 {
 	int bw; /* bus-width */
@@ -451,6 +572,7 @@ static void __init dm385_evm_init(void)
 	ti813x_hdmi_clk_init();
 	platform_add_devices(dm385_devices, ARRAY_SIZE(dm385_devices));
 #endif
+	ti814x_wl12xx_init();
 	regulator_use_dummy_regulator();
 #ifdef CONFIG_HAVE_PWM
 	omap_register_pwm_config(dm385_ipnc_pwm_cfg, ARRAY_SIZE(dm385_ipnc_pwm_cfg));
