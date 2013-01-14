@@ -48,6 +48,11 @@
 #define TI814X_MMC3_BASE	0x47810000 /* TI814X MMC/SD config base */
 #define TI814X_MMC3_HL_BASE	0x47810000 /* TI814X HL configuration*/
 
+#ifdef CONFIG_ARCH_TI814X
+#define TI81XX_NR_MMC		TI814X_NR_MMC
+#else /* TI816X */
+#define TI81XX_NR_MMC		TI816X_NR_MMC
+#endif
 
 #define HSMMC5			(1 << 4)
 #define HSMMC4			(1 << 3)
