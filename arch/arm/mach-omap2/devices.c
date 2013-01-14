@@ -3159,8 +3159,10 @@ static int __init omap2_init_devices(void)
 	ti814x_enable_i2c2();
 	ti814x_d_can_init(0);
 #endif
+#if !defined(CONFIG_MACH_DM385IPNC) && !defined(CONFIG_MACH_TI8148IPNC)
 #ifdef CONFIG_MTD_CFI
 	ti814x_nor_init();
+#endif
 #endif
 #endif
 	omap_init_ahci();

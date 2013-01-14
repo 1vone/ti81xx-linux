@@ -552,45 +552,6 @@ static struct snd_platform_data dm385_evm_snd_data = {
 	.rxnumevt	= 1,
 };
 
-/* NOR Flash partitions */
-static struct mtd_partition ti814x_evm_norflash_partitions[] = {
-	/* bootloader (U-Boot, etc) in first 5 sectors */
-	{
-		.name		= "bootloader",
-		.offset		= 0,
-		.size		= 2 * SZ_128K,
-		.mask_flags	= MTD_WRITEABLE, /* force read-only */
-	},
-	/* bootloader params in the next 1 sectors */
-	{
-		.name		= "env",
-		.offset		= MTDPART_OFS_APPEND,
-		.size		= SZ_128K,
-		.mask_flags	= 0,
-	},
-	/* kernel */
-	{
-		.name		= "kernel",
-		.offset		= MTDPART_OFS_APPEND,
-		.size		= 2 * SZ_2M,
-		.mask_flags	= 0
-	},
-	/* file system */
-	{
-		.name		= "filesystem",
-		.offset		= MTDPART_OFS_APPEND,
-		.size		= 25 * SZ_2M,
-		.mask_flags	= 0
-	},
-	/* reserved */
-	{
-		.name		= "reserved",
-		.offset		= MTDPART_OFS_APPEND,
-		.size		= MTDPART_SIZ_FULL,
-		.mask_flags	= 0
-	}
-};
-
 /* NAND flash information */
 static struct mtd_partition ti814x_nand_partitions[] = {
 /* All the partition sizes are listed in terms of NAND block size */
@@ -601,7 +562,7 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 	},
 	{
 		.name           = "U-Boot",
-		.offset         = MTDPART_OFS_APPEND,/* Offset = 0x0 + 128K */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x0 + 128K */
 		.size           = 18 * SZ_128K,
 	},
 	{
@@ -617,11 +578,21 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 	{
 		.name           = "File System",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x6C0000 */
-		.size           = 1601 * SZ_128K,
+		.size           = 840 * SZ_128K,
+	},
+	{	
+		.name           = "Data",
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x55C0000 */
+		.size           = 96 * SZ_128K,
 	},
 	{
+		.name           = "File System2",
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x61C0000 */
+		.size           = 424 * SZ_128K,
+	},
+	{	
 		.name           = "Reserved",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xCEE0000 */
+		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xB0C0000 */
 		.size           = MTDPART_SIZ_FULL,
 	},
 };
@@ -811,8 +782,6 @@ static void __init dm385_evm_init(void)
 #ifdef CONFIG_HAVE_PWM
 	omap_register_pwm_config(dm385_ipnc_pwm_cfg, ARRAY_SIZE(dm385_ipnc_pwm_cfg));
 #endif
-	board_nor_init(ti814x_evm_norflash_partitions,
-		ARRAY_SIZE(ti814x_evm_norflash_partitions), 0);
 	ti813x_pcf8575_cir_init();
 }
 

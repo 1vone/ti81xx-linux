@@ -31,6 +31,10 @@ config MTD_NAND_VERIFY_WRITE
 	  device thinks the write was successful, a bit could have been
 	  flipped accidentally due to device wear or something else.
 
+config ECC_BCH8_OFF
+	bool "Disable NAND hardware BCH8 ECC"
+	default n
+
 config MTD_SM_COMMON
 	tristate
 	default n

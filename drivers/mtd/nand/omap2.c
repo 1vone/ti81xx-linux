@@ -1264,7 +1264,7 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 	info->nand.verify_buf = omap_verify_buf;
 
 
-	/* detect flash buswidth */ 
+	/* detect flash buswidth */
 	info->nand.read_buf   = omap_read_buf8;
 	info->nand.write_buf  = omap_write_buf8;
 	gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 0);

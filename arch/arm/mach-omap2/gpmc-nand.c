@@ -95,12 +95,13 @@ int __init gpmc_nand_init(struct omap_nand_platform_data *_nand_data)
 	}
 
 	 /* Set timings in GPMC */
+	#if 0 
 	err = omap2_nand_gpmc_retime();
 	if (err < 0) {
 		dev_err(dev, "Unable to set gpmc timings: %d\n", err);
 		return err;
 	}
-
+	#endif
 	/* Enable RD PIN Monitoring Reg */
 	if (gpmc_nand_data->dev_ready) {
 		gpmc_cs_configure(gpmc_nand_data->cs, GPMC_CONFIG_RDY_BSY, 1);
