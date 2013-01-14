@@ -38,6 +38,7 @@
 #include <plat/board.h>
 #include <plat/mmc.h>
 #include <plat/cpu.h>
+#include <asm/mach-types.h>
 
 /* OMAP HSMMC Host Controller Registers */
 #define OMAP_HSMMC_SYSCONFIG	0x0010
@@ -197,7 +198,7 @@ struct omap_hsmmc_host {
 };
 
 static irqreturn_t omap_hsmmc_cd_handler(int irq, void *dev_id);
-#ifdef CONFIG_TI8148EVM_WL12XX
+
 static int omap_hsmmc_card_detection_disabled(struct omap_hsmmc_host *host)
 {
 	/*
@@ -211,7 +212,7 @@ static int omap_hsmmc_card_detection_disabled(struct omap_hsmmc_host *host)
 
 	return 0;
 }
-#endif
+
 static int omap_hsmmc_card_detect(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
@@ -221,12 +222,10 @@ static int omap_hsmmc_card_detect(struct device *dev, int slot)
 	u32 pstate;
 	u32 enabled;
 
-#ifdef CONFIG_TI8148EVM_WL12XX
 	if (omap_hsmmc_card_detection_disabled(host))
 		return 1;
-#endif
 
-	if (mmc->version != MMC_CTRL_VERSION_2)
+	if (mmc->version != MMC_CTRL_VERSION_2||machine_is_ti8148ipnc())
 		/* NOTE: assumes card detect signal is active-low */
 		return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
 	else {
@@ -255,7 +254,7 @@ static int omap_hsmmc_get_wp(struct device *dev, int slot)
 
 	u32 pstate;
 
-	if (mmc->version != MMC_CTRL_VERSION_2)
+	if (mmc->version != MMC_CTRL_VERSION_2||machine_is_ti8148ipnc())
 		/* NOTE: assumes write protect signal is active-high */
 		return gpio_get_value_cansleep(mmc->slots[0].gpio_wp);
 	else {
