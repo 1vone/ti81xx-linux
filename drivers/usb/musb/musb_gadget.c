@@ -44,11 +44,19 @@
 #include <linux/stat.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
+#include <linux/proc_fs.h>
+#include <asm/mach-types.h>
 
 #include "musb_core.h"
 
 
 #define MAX_MUSB_INSTANCE 2
+
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+struct proc_dir_entry *usb_proc=NULL;
+EXPORT_SYMBOL(usb_proc);
+static struct proc_dir_entry *gpUsbConnectProc = NULL;
+#endif
 
 /* MUSB PERIPHERAL status 3-mar-2006:
  *
@@ -2056,7 +2064,25 @@ void musb_g_disconnect(struct musb *musb)
 	u8	devctl = musb_readb(mregs, MUSB_DEVCTL);
 
 	DBG(3, "devctl %02x\n", devctl);
-
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+#if defined(CONFIG_MACH_DM385IPNC)
+	if (devctl==0x88) {
+#elif defined(CONFIG_MACH_TI8148IPNC)
+	if (devctl==0x80) {
+#endif
+		if(gpUsbConnectProc){
+			remove_proc_entry("usb_connect",NULL);
+			gpUsbConnectProc = NULL;
+		}
+		if(usb_proc){
+			remove_proc_entry("usb_appro",NULL);
+			usb_proc = NULL;
+		}
+	} else {
+		if(!gpUsbConnectProc)
+			gpUsbConnectProc = create_proc_entry("usb_connect", 0, NULL);
+	}
+#endif
 	/* clear HR */
 	musb_writeb(mregs, MUSB_DEVCTL, devctl & MUSB_DEVCTL_SESSION);
 

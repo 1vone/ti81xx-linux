@@ -250,6 +250,8 @@
 #include <linux/string.h>
 #include <linux/freezer.h>
 #include <linux/utsname.h>
+#include <linux/proc_fs.h>
+#include <asm/mach-types.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -279,7 +281,9 @@ static       char fsg_string_manufacturer[64];
 static const char fsg_string_product[] = DRIVER_DESC;
 static const char fsg_string_config[] = "Self-powered";
 static const char fsg_string_interface[] = "Mass Storage";
-
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+extern struct proc_dir_entry *usb_proc;
+#endif
 
 #include "storage_common.c"
 
@@ -1454,6 +1458,13 @@ static int do_synchronize_cache(struct fsg_dev *fsg)
 	rc = fsg_lun_fsync_sub(curlun);
 	if (rc)
 		curlun->sense_data = SS_WRITE_ERROR;
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+	if(usb_proc){
+		printk("usb remove 1\n");
+		remove_proc_entry("usb_appro", NULL);
+		usb_proc=NULL;
+	}
+#endif
 	return 0;
 }
 
@@ -1841,6 +1852,13 @@ static int do_start_stop(struct fsg_dev *fsg)
 			fsg_lun_close(curlun);
 			up_write(&fsg->filesem);
 			down_read(&fsg->filesem);
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+			if(usb_proc){
+				printk("usb remove 2\n");
+				remove_proc_entry("usb_appro", NULL);
+				usb_proc=NULL;
+			}
+#endif
 		}
 	} else {
 
@@ -2396,6 +2414,10 @@ static int do_scsi_command(struct fsg_dev *fsg)
 	switch (fsg->cmnd[0]) {
 
 	case INQUIRY:
+#if defined(CONFIG_MACH_DM385IPNC) || defined(CONFIG_MACH_TI8148IPNC)
+		if( !usb_proc)
+			usb_proc =  create_proc_entry("usb_appro", 0, NULL);
+#endif
 		fsg->data_size_from_cmnd = fsg->cmnd[4];
 		if ((reply = check_command(fsg, 6, DATA_DIR_TO_HOST,
 				(1<<4), 0,
