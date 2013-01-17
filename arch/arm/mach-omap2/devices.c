@@ -2972,7 +2972,7 @@ static inline void omap_init_ahci(void) {}
 #endif
 
 #if defined(CONFIG_ARCH_TI81XX)
-static struct resource dm385_mcasp_resource[] = {
+static struct resource ti81xx_mcasp1_resource[] = {
 	{
 		.name = "mcasp",
 		.start = TI81XX_ASP1_BASE,
@@ -2993,7 +2993,7 @@ static struct resource dm385_mcasp_resource[] = {
 	},
 };
 
-static struct resource ti81xx_mcasp_resource[] = {
+static struct resource ti81xx_mcasp2_resource[] = {
 	{
 		.name = "mcasp",
 		.start = TI81XX_ASP2_BASE,
@@ -3014,11 +3014,12 @@ static struct resource ti81xx_mcasp_resource[] = {
 	},
 };
 
-static struct platform_device ti81xx_mcasp_device = {
-	.name = "davinci-mcasp",
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+static struct platform_device tvp5158_audio_device = {
+	.name	= "tvp5158-audio",
+	.id	= -1,
 };
 
-#if defined(CONFIG_SND_TI81XX_SOC_EVM) || defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_UD8107_DVR)
 static u8 tvp5158_iis_serializer_direction[] = {
 	RX_MODE, INACTIVE_MODE,	 INACTIVE_MODE,	INACTIVE_MODE,
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
@@ -3029,14 +3030,18 @@ static u8 tvp5158_iis_serializer_direction[] = {
 static struct snd_platform_data tvp5158_snd_data = {
 	.tx_dma_offset	= 0x46000000,
 	.rx_dma_offset	= 0x46000000,
-	.asp_chan_q	= EVENTQ_2,
+	.asp_chan_q	= EVENTQ_0,
 	.tdm_slots	= 16, /* number of channels */
 	.op_mode	= DAVINCI_MCASP_IIS_MODE,
 	.num_serializer = ARRAY_SIZE(tvp5158_iis_serializer_direction),
 	.serial_dir	= tvp5158_iis_serializer_direction,
 	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
+    /* 
+          * Having Max number of channels as mcasp fifo / edma read depth.
+          * For 4ch this granularity is still 16 which is ok 
+          */
+	.txnumevt	= 16,
+	.rxnumevt	= 16,   
 };
 
 static struct resource ti81xx_mcasp0_resource[] = {
@@ -3060,7 +3065,7 @@ static struct resource ti81xx_mcasp0_resource[] = {
 	},
 };
 
-static struct platform_device ti81xx_mcasp0_device = {
+static struct platform_device ti81xx_mcasp_tvp5158_device = {
 	.name = "davinci-mcasp", /* driver name */
 	.id = 0,
 	.dev = {
@@ -3071,39 +3076,69 @@ static struct platform_device ti81xx_mcasp0_device = {
 };
 #endif
 
-void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
-{
-#if defined(CONFIG_MACH_UD8168_DVR)
-	ti81xx_mcasp_device.id = 2;
-	ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
-	ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
-	ti81xx_mcasp_device.dev.platform_data = pdata;
+#ifdef CONFIG_SND_SOC_TLV320AIC3X
+static u8 aic3x_iis_serializer_direction[] = {
+	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
+};
 
-	platform_device_register(&ti81xx_mcasp_device);
-	platform_device_register(&ti81xx_mcasp0_device);
+/* McASP1 <-> AIC3101 */
+static struct snd_platform_data aic3x_snd_data = {
+#if defined(CONFIG_MACH_TI810XEVM) || defined(CONFIG_MACH_TI810XDVR)|| defined (CONFIG_MACH_UD8107_DVR)
+	.tx_dma_offset	= 0x46400000,
+	.rx_dma_offset	= 0x46400000,
 #else
-	if (machine_is_ti8168evm() || machine_is_ti8148evm()
-				|| machine_is_ti811xevm()) {
-		ti81xx_mcasp_device.id = 2;
-		ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
-		ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
-	} else if (machine_is_dm385evm()) {
-		ti81xx_mcasp_device.id = 1;
-		ti81xx_mcasp_device.resource = dm385_mcasp_resource;
-		ti81xx_mcasp_device.num_resources = ARRAY_SIZE(dm385_mcasp_resource);
-	} else {
-		pr_err("%s: platform not supported\n", __func__);
-		return;
-	}
+	.tx_dma_offset	= 0x46800000,
+	.rx_dma_offset	= 0x46800000,
+#endif
+	.op_mode	= DAVINCI_MCASP_IIS_MODE,
+	.num_serializer = ARRAY_SIZE(aic3x_iis_serializer_direction),
+	.tdm_slots	= 2,
+	.serial_dir	= aic3x_iis_serializer_direction,
+	.asp_chan_q	= EVENTQ_0,
+	.version	= MCASP_VERSION_2,
+	.txnumevt	= 1,
+	.rxnumevt	= 1,
+	/* McASP21_AHCLKX out to feed CODEC CLK*/
+	.clk_input_pin	= MCASP_AHCLKX_OUT,
+};
+
+static struct platform_device ti81xx_mcasp_aic_device = {
+    .name = "davinci-mcasp",
+    .dev ={
+		.platform_data = &aic3x_snd_data,
+	},
+};
+#endif
+
+
+void __init ti81xx_register_mcasp(void)
+{
+#if defined(CONFIG_MACH_TI810XEVM) || defined(CONFIG_MACH_TI810XDVR)|| defined (CONFIG_MACH_UD8107_DVR)
+    printk (KERN_DEBUG "\n**** Registering AIC & MCASP1\n");
+    ti81xx_mcasp_aic_device.id = 1;
+    ti81xx_mcasp_aic_device.resource = ti81xx_mcasp1_resource;
+    ti81xx_mcasp_aic_device.num_resources = ARRAY_SIZE(ti81xx_mcasp1_resource);
+#else
+    printk (KERN_DEBUG "\n**** Registering AIC & MCASP2\n");
+	ti81xx_mcasp_aic_device.id = 2;
+	ti81xx_mcasp_aic_device.resource = ti81xx_mcasp2_resource;
+	ti81xx_mcasp_aic_device.num_resources = ARRAY_SIZE(ti81xx_mcasp2_resource);
+#endif 
 
 	/* TI811x AIC_MCLK is connected to SoC pin MCA2_AHCLKX */
 	//omap_mux_init_signal("xref_clk2.mcasp2_ahclkx", 0);
-	ti81xx_mcasp_device.dev.platform_data = pdata;
-	platform_device_register(&ti81xx_mcasp_device);
-
-#if defined(CONFIG_SND_TI81XX_SOC_EVM) || defined(CONFIG_MACH_UD8107_DVR)
-		platform_device_register(&ti81xx_mcasp0_device);
+#ifdef CONFIG_SND_SOC_TLV320AIC3X
+	platform_device_register(&ti81xx_mcasp_aic_device);
+    printk (KERN_DEBUG "\n**** Registering AIC & MCASP - Done\n");
 #endif
+
+#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
+    printk (KERN_DEBUG "\n**** Registering TVP5158 & MCASP0\n");
+    platform_device_register(&tvp5158_audio_device);
+    platform_device_register(&ti81xx_mcasp_tvp5158_device);
 #endif
 }
 #endif

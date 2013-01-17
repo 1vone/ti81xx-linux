@@ -784,10 +784,8 @@ static void __init dm385_evm_init(void)
 	omap_serial_init();
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
-#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
-	platform_device_register(&tvp5158_audio_device);
-#endif
-	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
+
+	ti81xx_register_mcasp();
 
 	setup_mmc2_pin_mux();
 	omap2_hsmmc_init(mmc);

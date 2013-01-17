@@ -94,6 +94,6 @@ enum ti81xx_clk_input_pin {
 #define DAVINCI_MCASP_IIS_MODE	0 /* Driver code needs to change modified */
 #define DAVINCI_MCASP_DIT_MODE	1
 
-void ti81xx_register_mcasp(int id, struct snd_platform_data *pdata);
+void ti81xx_register_mcasp(void);
 
 #endif /* __ASM_ARCH_TI81XX_ASP_H */

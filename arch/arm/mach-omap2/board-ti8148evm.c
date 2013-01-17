@@ -838,13 +838,6 @@ void __init ti8148_hdmi_clk_init(void)
 
 #endif
 
-#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
-static struct platform_device tvp5158_audio_device = {
-	.name	= "tvp5158-audio",
-	.id	= -1,
-};
-#endif
-
 #define LSI_PHY_ID		0x0282F014
 #define LSI_PHY_MASK		0xffffffff
 #define PHY_CONFIG_REG		22
@@ -874,11 +867,7 @@ static void __init ti8148_evm_init(void)
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
 
-#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
-	platform_device_register(&tvp5158_audio_device);
-#endif
-
-	ti81xx_register_mcasp(0, &ti8148_evm_snd_data);
+	ti81xx_register_mcasp();
 
 	setup_mmc2_pin_mux();
 	omap2_hsmmc_init(mmc);

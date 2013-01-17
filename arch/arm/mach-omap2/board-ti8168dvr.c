@@ -371,35 +371,6 @@ void __init ti8168_hdmi_mclk_init(void)
 
 }
 
-#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
-static u8 ti8168_iis_serializer_direction[] = {
-	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-};
-
-static struct snd_platform_data ti8168_dvr_snd_data = {
-	.tx_dma_offset	= 0x46800000,
-	.rx_dma_offset	= 0x46800000,
-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(ti8168_iis_serializer_direction),
-    .clk_input_pin  = MCASP_AHCLKX_OUT,
-	.tdm_slots	= 2,
-	.serial_dir	= ti8168_iis_serializer_direction,
-	.asp_chan_q	= EVENTQ_2,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
-};
-
-static struct platform_device tvp5158_audio_device = {
-	.name	= "tvp5158-audio",
-	.id	= -1,
-};
-#endif
-
-
 
 #ifdef CONFIG_EEPROM_UDDVR
 static int __init ti8168_dvr_eeprom_init(void)
@@ -460,11 +431,8 @@ static void __init ti8168_dvr_init(void)
 	ti8168_dvr_eeprom_init();
 	ti816x_dvr_i2c_init();
 
-	#ifdef CONFIG_SND_SOC_TVP5158_AUDIO
-	platform_device_register(&tvp5158_audio_device);
-	#endif
+	ti81xx_register_mcasp();
 
-	ti81xx_register_mcasp(0, &ti8168_dvr_snd_data);
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);
 	
