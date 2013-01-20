@@ -1767,6 +1767,9 @@ static int emac_dev_stop(struct net_device *ndev)
 	if (priv->phydev)
 		phy_disconnect(priv->phydev);
 
+	emac_write(EMAC_DM646X_MACEOIVECTOR, 0x1);
+	emac_write(EMAC_DM646X_MACEOIVECTOR, 0x2);
+
 	/* Free IRQ */
 	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, i))) {
 		for (irq_num = res->start; irq_num <= res->end; irq_num++)
