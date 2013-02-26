@@ -3040,8 +3040,8 @@ static struct snd_platform_data tvp5158_snd_data = {
           * Having Max number of channels as mcasp fifo / edma read depth.
           * For 4ch this granularity is still 16 which is ok 
           */
-	.txnumevt	= 16,
-	.rxnumevt	= 16,   
+	.txnumevt	= 32,
+	.rxnumevt	= 32,   
 };
 
 static struct resource ti81xx_mcasp0_resource[] = {
@@ -3099,8 +3099,8 @@ static struct snd_platform_data aic3x_snd_data = {
 	.serial_dir	= aic3x_iis_serializer_direction,
 	.asp_chan_q	= EVENTQ_0,
 	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
+	.txnumevt	= 32,
+	.rxnumevt	= 32,
 	/* McASP21_AHCLKX out to feed CODEC CLK*/
 	.clk_input_pin	= MCASP_AHCLKX_OUT,
 };
