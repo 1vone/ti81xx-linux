@@ -34,6 +34,23 @@
 #define CLK_NAME_LEN		40
 #define MAX_SENSORS_PER_VD	2
 
+/* Restrict SR to Class1 operation */
+#if 0
+#define SRCLASS1
+#endif
+
+/* Enable calibration of Ntarget during SR init */
+#if 1
+#define SRCALIBRATE
+#endif
+
+/* Enable debug prints */
+#if 1
+#define dprintk(x...) printk("[DBG]" x)
+#else
+#define dprintk(x...)
+#endif
+
 struct ti816x_sr_sensor {
 	u32			irq;
 	u32			irq_status;
@@ -60,10 +77,39 @@ struct ti816x_sr {
 	int				uvoltage_step_size;
 	struct regulator		*reg;
 	struct work_struct		work;
+#ifdef SRCLASS1
+	struct work_struct		opwork;
+#endif
 	struct sr_platform_data		*sr_data;
 	struct ti816x_sr_sensor		sen[MAX_SENSORS_PER_VD];
 	struct platform_device		*pdev;
 };
+
+#ifdef SRCLASS1
+static struct timer_list optimer;
+static int opdelay, stopsrop, load_volt_mv;
+static void irq_sr_optimer(unsigned long data);
+static void sr_stop_vddautocomp(struct ti816x_sr *sr);
+#endif
+
+#ifdef SRCALIBRATE
+#if !defined(CONFIG_MACH_UD8168_DVR)
+#define PMIC_MAX_VOLT		1025000 /* uV - Max voltage capacity of PMIC */
+#define PMIC_RESOLUTION		15000	/* uV - Step size of PMIC */
+#else
+#define PMIC_MAX_VOLT		1050000 /* uV - Max voltage capacity of PMIC */
+#define PMIC_RESOLUTION		7812	/* uV - Step size of PMIC */
+#endif
+#define REGRESSION_RANGE	3	/* int - No of error values used in regression */
+#define MAX_LOOPCNT		100	/* size - Error counts, estimates Array Size */
+#define ERRAVG_LOOPCNT		5	/* int - No of AvgErr readings used for ncounts calc */
+#define GUARDBAND_PERCENTAGE	5	/* % - Customer must decide this value based on their test, % of supply voltage */
+#define FAILSAFE_SRVMIN		(((PMIC_MAX_VOLT)*100) / (100 + (GUARDBAND_PERCENTAGE)))	/* uV - This should be PMIC_MAX / ( 1 + GB%)*/
+#define TEST_GUARDBAND		25000	/* uV - Extra guardband left over during test */
+static int calib_start, calib_step;
+static int pmic_setpnt_arr[MAX_LOOPCNT];
+static int srvmin_hvtn_arr[MAX_LOOPCNT], srvmin_svtn_arr[MAX_LOOPCNT];
+#endif
 
 static inline void sr_write_reg(struct ti816x_sr *sr, int offset, u32 value,
 					u32 srid)
@@ -119,6 +165,30 @@ static int get_errvolt(struct ti816x_sr *sr, s32 srid)
 	return uvoltage;
 }
 
+#ifdef SRCLASS1
+/* Set PMIC out put to final voltage
+ * final voltage = curr_voltage + guard-band voltage
+ * Disable the regulator as we enabled it during init
+*/
+static void set_final_voltage(struct work_struct *work)
+{
+	struct ti816x_sr *sr;
+	int final_volt_mv;
+
+	sr = container_of(work, struct ti816x_sr, opwork);
+
+	final_volt_mv	= regulator_get_voltage(sr->reg);
+	dprintk("smartreflex: voltage stabilized at %dmV\n",
+						final_volt_mv);
+	final_volt_mv	= (final_volt_mv*100/95) + load_volt_mv;
+	dprintk("smartreflex: setting final voltage to %dmV\n",
+						final_volt_mv);
+	regulator_set_voltage(sr->reg, final_volt_mv, final_volt_mv);
+	regulator_disable(sr->reg);
+
+}
+#endif
+
 /* set_voltage - Schedule task for setting the voltage
  * @work:	pointer to the work structure
  *
@@ -161,6 +231,9 @@ static void set_voltage(struct work_struct *work)
 	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SRENABLE,
 			~SRCONFIG_SRENABLE, SRSVT);
 
+	printk(KERN_INFO "smartreflex: prev volt %d new_volt %d\n",
+						prev_volt, new_volt);
+
 	regulator_set_voltage(sr->reg, new_volt, new_volt);
 
 	/* Restart the module after voltage set */
@@ -168,6 +241,27 @@ static void set_voltage(struct work_struct *work)
 			SRCONFIG_SRENABLE, SRHVT);
 	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SRENABLE,
 			SRCONFIG_SRENABLE, SRSVT);
+#ifdef SRCLASS1
+	/* Load and start the timer here */
+
+	if (timer_pending(&optimer)) {
+		dprintk("smartreflex: Received another interrupt"
+			"before Timer expired\n");
+		dprintk("smartreflex: Resetting the Timer...\n");
+		/* Received interrupt before timer expired */
+		del_timer(&optimer);
+	} else if (work_pending(&sr->opwork))
+		cancel_work_sync(&sr->opwork);
+
+	optimer.data = (unsigned long)sr;
+		optimer.function = irq_sr_optimer;
+	optimer.expires = jiffies +
+			msecs_to_jiffies(opdelay);
+	dprintk("smartreflex: starting operational Timer for"
+			"%d secs\n", opdelay/1000);
+	add_timer(&optimer);
+#endif
+
 }
 
 /* irq_sr_htimer - sr HVT timer callback
@@ -205,6 +299,24 @@ static void irq_sr_stimer(unsigned long data)
 	sr_modify_reg(sr, IRQENABLE_SET, IRQENABLE_MCUBOUNDSINT,
 			IRQENABLE_MCUBOUNDSINT, SRSVT);
 }
+
+#ifdef SRCLASS1
+/* SR Operational timer callback */
+static void irq_sr_optimer(unsigned long data)
+{
+	struct ti816x_sr *sr;
+	sr = (struct ti816x_sr *)data;
+	stopsrop = 1;
+
+	dprintk("smartreflex: Timer expired ->"
+					"Disabling SmartReflex\n");
+
+	sr_stop_vddautocomp(sr);
+
+	dprintk("smartreflex: SmartReflex module disabled\n");
+
+}
+#endif
 
 /* sr_class2_irq - sr irq handling
  * @irq:	Number of the irq serviced
@@ -403,7 +515,16 @@ static void sr_start_vddautocomp(struct ti816x_sr *sr)
 		sr_configure(sr, i);
 		sr_enable(sr, i);
 	}
+#ifdef SRCLASS1
+	/* Init operational timer */
+	init_timer(&optimer);
+	/* Time delay for voltage stabilization */
+	opdelay = 60000; /*msec*/
+	stopsrop = 0;
+	load_volt_mv = 0; /* volt diff between max and min load condtitions */
 
+	INIT_WORK(&sr->opwork, set_final_voltage);
+#endif
 	sr->autocomp_active = 1;
 }
 
@@ -423,14 +544,21 @@ static void sr_stop_vddautocomp(struct ti816x_sr *sr)
 
 	cancel_work_sync(&sr->work);
 
-	regulator_disable(sr->reg);
 	for (i = 0; i < sr->sens_per_vd; i++) {
 		sr_disable(sr, i);
 		del_timer_sync(&sr->sen[i].timer);
 		sr_clk_disable(sr, i);
 	}
-
-	regulator_set_voltage(sr->reg, sr->init_volt_mv, sr->init_volt_mv);
+#ifdef SRCLASS1
+	if (!stopsrop) {
+#endif
+		regulator_set_voltage(sr->reg, sr->init_volt_mv,
+						sr->init_volt_mv);
+		regulator_disable(sr->reg);
+#ifdef SRCLASS1
+	} else
+		schedule_work(&sr->opwork);
+#endif
 	sr->autocomp_active = 0;
 }
 
@@ -513,8 +641,8 @@ static int sr_debugfs_entries(struct ti816x_sr *sr_info)
 
 	dbg_dir = debugfs_create_dir("smartreflex", NULL);
 	if (IS_ERR(dbg_dir)) {
-		dev_err(&sr_info->pdev->dev, "%s: Unable to create debugfs"
-				" directory\n", __func__);
+		dev_err(&sr_info->pdev->dev, "%s: Unable to create debugfs directory\n",
+								__func__);
 		return PTR_ERR(dbg_dir);
 	}
 
@@ -546,6 +674,317 @@ static int sr_debugfs_entries(struct ti816x_sr *sr_info)
 #else
 static int sr_debugfs_entries(struct ti816x_sr *sr_info)
 {
+	return 0;
+}
+#endif
+
+#ifdef SRCALIBRATE
+
+/* Gives you the Ntargets loaded into sr registers from efuses */
+static int sr_get_ncounts(struct ti816x_sr *sr_info, int srid, int *ntarg,
+									int *ga)
+{
+	int ntarget_reg, nreciprocal, gain;
+
+	if (NULL == ntarg)
+		return -EINVAL;
+	ntarget_reg = sr_read_reg(sr_info, NVALUERECIPROCAL, srid);
+	nreciprocal = ntarget_reg & 0xff;
+	gain = (ntarget_reg&0xf0000) >> 16;
+	if (NULL != ga)
+		*ga = gain;
+	*ntarg = ((int)(0x1 << (gain + 8)) / nreciprocal);
+	return 0;
+}
+
+/* Gives you the difference between efused ntargets and ncounts
+ * at the timer of the error */
+static void sr_get_counts_from_error(struct ti816x_sr *sr_info, int srid,
+								int *buff)
+{
+	int ntarget, senerror_reg, avgerror, i, ncounts_avg = 0;
+
+	sr_get_ncounts(sr_info, srid, &ntarget, NULL);
+	dprintk("%s ntarget %d\n", __func__, ntarget);
+	/* Read sr sensor avgerr register and calculate ncounts
+	 * Use the average of 5 readings to account for
+	 * momentary changes in the average due to volt ripples */
+	for(i = 0; i < ERRAVG_LOOPCNT; i++) {
+		senerror_reg = sr_read_reg(sr_info, SENERROR_V2, srid);
+		senerror_reg = (senerror_reg & 0x0000FF00);
+		avgerror = (s8)(senerror_reg >> 8);
+		dprintk("%s error rdng no %d =  %d\n", __func__, i, avgerror);
+		ncounts_avg += (-(int)(ntarget*avgerror)/100);
+		/* wait for a couple of msecs */
+		usleep_range(1000, 5000);
+	}
+	*buff = ncounts_avg / ERRAVG_LOOPCNT;
+	dprintk("%s Ncounts offset %d\n", __func__, *buff);
+}
+
+/* runs a regression to for given x_for_eval and returns estimate of y */
+static int sr_run_regression(int x_for_eval, int range, int *x, int *y,
+								int count)
+{
+	int i, num, denom, slope, intercept;
+	int xsum, ysum, xavg, yavg;
+
+	i = num = denom = slope = intercept = 0;
+	xsum = ysum = xavg = yavg =0;
+
+	if (NULL == x || NULL == y)
+		return -EINVAL;
+
+	dprintk("%s count %d\n", __func__, count);
+	dprintk("%s range %d\n", __func__, range);
+	for (i = count - range +1; i <= count; i++) {
+		xsum += x[i];
+		ysum += y[i];
+	}
+	xavg = xsum / range;
+	yavg = ysum / range;
+	dprintk("%s xavg %d\n", __func__, xavg);
+	dprintk("%s yavg %d\n", __func__, yavg);
+
+	/* Calculate slope */
+	for (i=count - range + 1; i <= count; i++) {
+		num += (x[i]- xavg)*(y[i]- yavg);
+		denom += (x[i]- xavg)*(x[i]-xavg);
+	}
+
+	/* Check for denominator != 0 */
+	if (denom == 0)	{
+		printk(KERN_ERR "%s Error: Denominator is zero\n",
+								__func__);
+		BUG();
+	}
+	dprintk("%s num %d denom %d\n", __func__, num,denom);
+	slope = num / denom;
+
+	dprintk("slope = %d\n", slope);
+	/* Calculate intercept */
+	intercept = yavg - slope * xavg;
+
+	dprintk("intercept = %d\n", intercept);
+	/* Return prediciton */
+	dprintk("value = %d\n", (intercept + slope * x_for_eval));
+	return (intercept + slope * x_for_eval);
+
+}
+
+/* Write the new target values to registers */
+static int sr_set_new_ntarget(struct ti816x_sr *sr_info, int srid,
+								int offset_n)
+{
+	int ntarget, gain, nreciprocal, val;
+	/* As per SR spec only n and p type sensors are exclusive
+	 * we are using n type
+	 * if p type sensor is enabled then get p counts and rewrite reg
+	 */
+	/* CHANGE#6 Failsafe : Do not lower Ntargets
+	 * Program new ntargets only if the offset is +ve */
+	if(offset_n > 0) {
+		sr_get_ncounts(sr_info, srid, &ntarget, &gain);
+		dprintk("Old Ntarget value for %s was %d\n",srid==SRHVT?"HVT":"SVT",ntarget);
+		ntarget = ntarget + offset_n;
+		nreciprocal = (0x1 << (gain+8)) / ntarget;
+		val = sr_read_reg(sr_info, NVALUERECIPROCAL, srid);
+		val &= 0xffffff00;
+		val |= (0xff & nreciprocal);
+		sr_write_reg(sr_info, NVALUERECIPROCAL, val, srid);
+		/* update in software */
+		sr_info->sen[srid].nvalue = val;
+	}
+	return 0;
+}
+
+/* Hey.. who is Max? */
+int sr_max_of(int a, int b)
+{
+	return (a>b ? a : b);
+}
+
+/* Calibration routine */
+static int sr_ntarget_calibration(struct ti816x_sr *sr)
+{
+	int pmic_set_volt, srvmin_estimate, gbsrvmin_estimate, srvmin_gb;
+	int gb_count_estimate_hvtn = 0, gb_count_estimate_svtn = 0, new_ntarget;
+	int srvmin_estimate_hvtn, srvmin_estimate_svtn, loopcnt = 0;
+	int i, srstatus_reg, supp_settling_time_us = 1000; /* usecs - T = CV/I */
+	struct ti816x_sr *sr_info = (struct ti816x_sr *) sr;
+	/* Initialize test parameters */
+	pmic_set_volt	= calib_start = PMIC_MAX_VOLT; /* uV */
+	calib_step	= PMIC_RESOLUTION;
+	srvmin_gb	= GUARDBAND_PERCENTAGE;
+	gbsrvmin_estimate = -1;
+
+	/* Disable SR interrupts */
+
+	for(i = 0; i <= 1; i++) {
+		/* Clear MCUBounds Interrupt */
+		sr_modify_reg(sr, IRQSTATUS, IRQSTATUS_MCBOUNDSINT,
+				IRQSTATUS_MCBOUNDSINT, i);
+
+		/* Disable the interrupt and enable after timer expires */
+		sr_modify_reg(sr, IRQENABLE_CLR, IRQENABLE_MCUBOUNDSINT,
+				IRQENABLE_MCUBOUNDSINT, i);
+	}
+
+	/* XXX: Make the loop termination independent of guardband
+	 * currently we use gbsrvmin_estimate for looptermination which
+	 * is deopendent on guardband(srvmin_gb) fixed @5%
+	 * Stretch goal: we need find a way to make srvmin_gb a configurable
+	 * value and derive it runtime as per the drop/ripple on the board
+	 */
+	while (((loopcnt <= REGRESSION_RANGE) ||
+					(pmic_set_volt >= gbsrvmin_estimate)) && loopcnt < MAX_LOOPCNT) {
+		dprintk("\tloopcnt/iteration %d\n", loopcnt);
+		pmic_set_volt = calib_start - loopcnt * calib_step;
+		/* Clear the counter, SR module disable */
+		sr_modify_reg(sr_info, SRCONFIG, SRCONFIG_SRENABLE,
+						~SRCONFIG_SRENABLE, SRHVT);
+		sr_modify_reg(sr_info, SRCONFIG, SRCONFIG_SRENABLE,
+						~SRCONFIG_SRENABLE, SRSVT);
+
+		dprintk("%s old voltage %d new voltage %d\n",
+			__func__, regulator_get_voltage(sr_info->reg),
+								pmic_set_volt);
+
+		regulator_set_voltage(sr_info->reg, pmic_set_volt,
+								pmic_set_volt);
+		/*  Wait for the pmic voltage to stabilze  T = CV/I*/
+		udelay(supp_settling_time_us);
+
+		/* Restart the module after voltage set */
+		sr_modify_reg(sr_info, SRCONFIG, SRCONFIG_SRENABLE,
+						SRCONFIG_SRENABLE, SRHVT);
+		sr_modify_reg(sr_info, SRCONFIG, SRCONFIG_SRENABLE,
+						SRCONFIG_SRENABLE, SRSVT);
+		pmic_setpnt_arr[loopcnt] = pmic_set_volt;
+
+		/* Sleep for sometime let the error accumulate*/
+		usleep_range(10000, 20000);
+
+		/* wait till the AvgError is valid for HVT*/
+		srstatus_reg = sr_read_reg(sr_info, SRSTATUS, SRHVT);
+		while((srstatus_reg & SRSTATUS_AVGERRVALID) == 0) {
+			usleep_range(10000, 20000);
+			dprintk("\tWaiting for AvgErr to be valid for HVT\n");
+		}
+		sr_get_counts_from_error(sr_info, SRHVT,
+						&srvmin_hvtn_arr[loopcnt]);
+		dprintk("\tSRErrorCounts N, HVT %d\n",
+						srvmin_hvtn_arr[loopcnt]);
+
+		/* wait till the AvgError is valid for SVT*/
+		srstatus_reg = sr_read_reg(sr_info, SRSTATUS, SRSVT);
+		while((srstatus_reg & SRSTATUS_AVGERRVALID) == 0) {
+			usleep_range(10000, 20000);
+			dprintk("\tWaiting for AvgErr to be valid for SVT\n");
+		}
+
+		sr_get_counts_from_error(sr_info, SRSVT,
+						&srvmin_svtn_arr[loopcnt]);
+		dprintk("\tSRErrorCounts N, SVT %d\n",
+						srvmin_svtn_arr[loopcnt]);
+		loopcnt++;
+		if (loopcnt >= REGRESSION_RANGE) {
+			srvmin_estimate_hvtn =
+			sr_run_regression(0, REGRESSION_RANGE, srvmin_hvtn_arr,
+						pmic_setpnt_arr, loopcnt-1);
+			srvmin_estimate_svtn =
+			sr_run_regression(0, REGRESSION_RANGE, srvmin_svtn_arr,
+						pmic_setpnt_arr, loopcnt-1);
+
+			dprintk("\tsrvmin_estimate_hvtn %d\n",
+							srvmin_estimate_hvtn);
+			dprintk("\tsrvmin_estimate_svtn %d\n",
+							srvmin_estimate_svtn);
+
+			srvmin_estimate = sr_max_of(srvmin_estimate_hvtn,
+							srvmin_estimate_svtn);
+			dprintk("srvmin_estimate = %d\n",
+							srvmin_estimate);
+			/* CHANGE#2:  If PMIC current voltage gone below srvmin_estimate
+			 * then there is a risk of system crashing
+			 */
+			WARN((pmic_set_volt <  srvmin_estimate), "PMIC voltage has gone below estimated SRVmin value - system reliablity is at risk");
+
+			/* CHANGE#4: USe the left over guardband during test */
+			gbsrvmin_estimate =
+			(srvmin_estimate + (srvmin_estimate * srvmin_gb) / 100) - TEST_GUARDBAND;
+
+			dprintk("gbsrvmin_estimate = %d\n",
+							gbsrvmin_estimate);
+
+			gb_count_estimate_hvtn =
+			sr_run_regression(gbsrvmin_estimate, REGRESSION_RANGE,
+					pmic_setpnt_arr, srvmin_hvtn_arr,
+								loopcnt-1);
+
+			gb_count_estimate_svtn =
+			sr_run_regression(gbsrvmin_estimate, REGRESSION_RANGE,
+					pmic_setpnt_arr, srvmin_svtn_arr,
+								loopcnt-1);
+
+			dprintk("\tgb_count_estimate_hvtn %d\n",
+							gb_count_estimate_hvtn);
+			dprintk("\tgb_count_estimate_svtn %d\n",
+							gb_count_estimate_svtn);
+			dprintk("\t search end state pmic_set_volt <= gbsrvmin_estimate %d\n",
+							gbsrvmin_estimate);
+		}
+	}
+
+	/* XXX: If we have maxed out on arrays go ahead with available data instead of bugging out */
+	WARN((loopcnt == MAX_LOOPCNT - 1), "Err_Counts Array size was not enough for calibration loop, using acquired data for calibration\n");
+
+	/* CHANGE#1: Need to handle the case where gbsrvmin_estimate is greater than the
+	 * maximum regulator output
+	 */
+	if (gbsrvmin_estimate > PMIC_MAX_VOLT || gbsrvmin_estimate > FAILSAFE_SRVMIN) {
+	/* CHANGE#3: if gbsrvmin estimated is greater than our failsafe voltage then fall back */
+		if(gbsrvmin_estimate > FAILSAFE_SRVMIN) {
+			printk(KERN_ERR "WARN: Guardbanded SRVmin %d is greater than failsafe volt %d\n",
+									gbsrvmin_estimate, FAILSAFE_SRVMIN);
+			gbsrvmin_estimate = FAILSAFE_SRVMIN;
+		} else {
+			printk(KERN_ERR "Error: Guardbanded SR VMIN (srvmin_estimate * srvmin_gb = gbsrvmin_estimate)"
+				"greater than PMIC maximum voltage ($PMICMaxVoltage)\n");
+			printk(KERN_ERR "This device can not be supported with the curent PMIC settings\n");
+		}
+		printk(KERN_ERR "Adjusting Ntargets to a failsafe voltage of %d\n", FAILSAFE_SRVMIN);
+		gb_count_estimate_hvtn =
+			sr_run_regression(FAILSAFE_SRVMIN, REGRESSION_RANGE,
+					pmic_setpnt_arr, srvmin_hvtn_arr,
+								loopcnt-1);
+
+		gb_count_estimate_svtn =
+			sr_run_regression(FAILSAFE_SRVMIN, REGRESSION_RANGE,
+					pmic_setpnt_arr, srvmin_svtn_arr,
+								loopcnt-1);
+	}
+	/* Upon exit, the last values of the SRError_* registers will contain
+	 * the target error.  Offset the efuse value by this error
+	 * This should be +
+	 */
+	sr_set_new_ntarget(sr_info, SRHVT, gb_count_estimate_hvtn);
+	sr_get_ncounts(sr_info, SRHVT, &new_ntarget, NULL);
+	dprintk("\t***** New Target value for HVT %d\n",
+								new_ntarget);
+
+	sr_set_new_ntarget(sr_info, SRSVT, gb_count_estimate_svtn);
+	sr_get_ncounts(sr_info, SRSVT, &new_ntarget, NULL);
+	dprintk("\t ***** New Target value for SVT %d\n",
+								new_ntarget);
+
+	dprintk("\tVoltage boosted by %d\n",
+					gbsrvmin_estimate - srvmin_estimate);
+	for(i = 0; i <= 1; i++) {
+		/* Enable the interrupt */
+		sr_modify_reg(sr, IRQENABLE_SET, IRQENABLE_MCUBOUNDSINT,
+				IRQENABLE_MCUBOUNDSINT, i);
+	}
 	return 0;
 }
 #endif
@@ -679,9 +1118,13 @@ static int __init ti816x_sr_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "Driver initialized\n");
 
+
 	if (pdata->enable_on_init)
 		sr_start_vddautocomp(sr_info);
-
+#ifdef SRCALIBRATE
+	/* Calibrate Ntarget offsets */
+	sr_ntarget_calibration (sr_info);
+#endif
 	return ret;
 
 err_free_irq:
