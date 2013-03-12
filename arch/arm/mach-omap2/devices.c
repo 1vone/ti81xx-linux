@@ -1310,7 +1310,7 @@ static struct platform_device ti816x_emac1_device = {
 };
 
 static struct platform_device ti816x_emac2_device = {
-	.name	=	"eth_offload",
+	.name	=	"davinci_emac",
 	.id	=	1,
 	.num_resources	=	ARRAY_SIZE(ti816x_emac2_resources),
 	.resource	=	ti816x_emac2_resources,
