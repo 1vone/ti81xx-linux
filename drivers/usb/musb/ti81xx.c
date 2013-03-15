@@ -409,7 +409,7 @@ static const struct cppi41_tx_ch tx_ch_info[] = {
 };
 
 /* Queues 0 to 66 are pre-assigned, others are spare */
-static const u32 assigned_queues[] = {	0xffffffff, /* queue 0..31 */
+static const u32 assigned_queues[] = {	0x0,	    /* free queue 0..31 */
 					0xffffffff, /* queue 32..63 */
 					0xffffffff, /* queue 64..95 */
 					0xffffffff, /* queue 96..127 */
@@ -442,7 +442,7 @@ int __devinit cppi41_init(u8 id, u8 irq, int num_instances)
 	blknum = cppi_info->dma_block;
 
 	/* Queue manager information */
-	cppi41_queue_mgr[0].num_queue = 159;
+	cppi41_queue_mgr[0].num_queue = 155;
 	cppi41_queue_mgr[0].queue_types = CPPI41_FREE_DESC_BUF_QUEUE |
 						CPPI41_UNASSIGNED_QUEUE;
 	cppi41_queue_mgr[0].base_fdbq_num = 0;
