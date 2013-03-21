@@ -784,26 +784,6 @@ static void __init ti8168_evm_init_irq(void)
 	gpmc_init();
 }
 
-static u8 ti8168_iis_serializer_direction[] = {
-	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-};
-
-static struct snd_platform_data ti8168_evm_snd_data = {
-	.tx_dma_offset	= 0x46800000,
-	.rx_dma_offset	= 0x46800000,
-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(ti8168_iis_serializer_direction),
-	.tdm_slots	= 2,
-	.serial_dir	= ti8168_iis_serializer_direction,
-	.asp_chan_q	= EVENTQ_2,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 64,
-	.rxnumevt	= 64,
-};
-
 static struct omap_musb_board_data musb_board_data = {
 	.interface_type		= MUSB_INTERFACE_ULPI,
 #ifdef CONFIG_USB_MUSB_OTG
@@ -914,7 +894,6 @@ static void __init ti8168_evm_init(void)
 	omap_serial_init();
 	ti816x_evm_i2c_init();
 	i2c_add_driver(&ti816xevm_cpld_driver);
-
 	ti81xx_register_mcasp();
 
 	ti816x_spi_init();

@@ -601,26 +601,6 @@ static void __init ti814x_evm_i2c_init(void)
 				ARRAY_SIZE(ti814x_i2c_boardinfo1));
 }
 
-static u8 ti8148_iis_serializer_direction[] = {
-	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-};
-
-static struct snd_platform_data ti8148_evm_snd_data = {
-	.tx_dma_offset	= 0x46800000,
-	.rx_dma_offset	= 0x46800000,
-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(ti8148_iis_serializer_direction),
-	.tdm_slots	= 2,
-	.serial_dir	= ti8148_iis_serializer_direction,
-	.asp_chan_q	= EVENTQ_2,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 64,
-	.rxnumevt	= 64,
-};
-
 /* NOR Flash partitions */
 static struct mtd_partition ti814x_evm_norflash_partitions[] = {
 	/* bootloader (U-Boot, etc) in first 5 sectors */
@@ -861,6 +841,7 @@ static int setup_mmc2_pin_mux(void)
 
 static void __init ti8148_evm_init(void)
 {
+	int bw; /* bus-width */
 
 	ti814x_mux_init(board_mux);
 	omap_serial_init();

@@ -529,25 +529,6 @@ static void __init ti814x_evm_i2c_init(void)
 
 }
 
-static u8 dm385_iis_serializer_direction[] = {
-	TX_MODE,	RX_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
-};
-
-static struct snd_platform_data dm385_evm_snd_data = {
-	.tx_dma_offset	= 0x46400000,
-	.rx_dma_offset	= 0x46400000,
-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
-	.num_serializer = ARRAY_SIZE(dm385_iis_serializer_direction),
-	.tdm_slots	= 2,
-	.serial_dir	= dm385_iis_serializer_direction,
-	.asp_chan_q	= EVENTQ_2,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 64,
-	.rxnumevt	= 64,
-};
 
 /* NOR Flash partitions */
 static struct mtd_partition ti814x_evm_norflash_partitions[] = {
@@ -784,7 +765,6 @@ static void __init dm385_evm_init(void)
 	omap_serial_init();
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
-
 	ti81xx_register_mcasp();
 
 	setup_mmc2_pin_mux();
