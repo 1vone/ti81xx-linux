@@ -798,6 +798,16 @@ struct spi_board_info __initdata ti8148_spi_slave_info[] = {
 		.bus_num	= 1,
 		.chip_select	= 0,
 	},
+//to register SPI flash on SPI2.0
+/*	{
+                .modalias       = "m25p80",
+                .platform_data  = &ti8148_spi_flash,
+                .irq            = -1,
+                .max_speed_hz   = 75000000,
+                .bus_num        = 2,
+                .chip_select    = 0,
+        },
+*/
 };
 
 void __init ti8148_spi_init(void)
