@@ -49,7 +49,8 @@ static int fb_mmode = 1;
 #undef TIED_GRPX_INPUT
 
 /* ONLY enable TIED GRPX INPUT for TI814X platform */
-#if ( defined(CONFIG_MACH_TI8148EVM) || defined(CONFIG_MACH_TI814XDVR) ) && !defined(CONFIG_MACH_TI810XEVM) && !defined(CONFIG_MACH_TI810XDVR)
+// #if ( defined(CONFIG_MACH_TI8148EVM) || defined(CONFIG_MACH_TI814XDVR) ) && !defined(CONFIG_MACH_TI810XEVM) && !defined(CONFIG_MACH_TI810XDVR)
+#if 0   /* Diabling TIED GRPX which was enabled only for 814x platforms */
 #define TIED_GRPX_INPUT
 #endif
 
