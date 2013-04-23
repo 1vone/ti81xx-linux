@@ -2562,6 +2562,10 @@ static inline void ti814x_cpsw_init(void) {}
 #endif
 
 #ifdef CONFIG_ARCH_TI81XX
+
+#define REFCLK_LDO_INVALID	(0x10 << 16)
+#define REFCLK_LDO_REF_VAL	(0x001A0020)
+
 static void ti81xx_ethernet_init(void)
 {
 	if (cpu_is_ti816x())
@@ -2642,6 +2646,17 @@ static inline void ti814x_sata_pllcfg(void)
 {
 	if (!cpu_is_ti814x())
 		return;
+
+	if (cpu_is_dm385()) {
+		/*check for correct VSET value in REFCLK_LJCBLDO_CTRL register*/
+		if ((omap_ctrl_readl(TI814X_REFCLK_LJCBLDO_CTRL) &
+				(REFCLK_LDO_INVALID)) == REFCLK_LDO_INVALID) {
+
+			omap_ctrl_writel(REFCLK_LDO_REF_VAL,
+						TI814X_REFCLK_LJCBLDO_CTRL);
+			udelay(2000);
+		}
+	}
 
 	if ((cpu_is_ti814x()) && (!cpu_is_dm385())) {
 		/* Configure 100Mhz clock source on DM814x */
