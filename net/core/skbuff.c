@@ -152,6 +152,8 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
  *
  */
 
+#define CACHE_ALIGNMENT_SIZE	128
+
 /**
  *	__alloc_skb	-	allocate a network buffer
  *	@size: size to allocate
@@ -182,6 +184,9 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
 	if (!skb)
 		goto out;
 	prefetchw(skb);
+
+	/* Add additional tailroom between the data region and shinfo */
+	size += CACHE_ALIGNMENT_SIZE;
 
 	size = SKB_DATA_ALIGN(size);
 	data = kmalloc_node_track_caller(size + sizeof(struct skb_shared_info),
