@@ -748,6 +748,17 @@ static void omap_init_sham(void)
 	}
 	platform_device_register(&sham_device);
 }
+#elif defined(CONFIG_CRYPTO_DEV_NSS_SHAM) || (CONFIG_CRYPTO_DEV_NSS_SHAM_MODULE)
+
+static struct platform_device sham_device = {
+	.name		= "nss-sham",
+	.id		= -1,
+};
+
+static void omap_init_sham(void)
+{
+	platform_device_register(&sham_device);
+}
 #else
 static inline void omap_init_sham(void) { }
 #endif
@@ -818,8 +829,51 @@ static void omap_init_aes(void)
 	platform_device_register(&aes_device);
 }
 
+#elif defined(CONFIG_CRYPTO_DEV_NSS_AES) || (CONFIG_CRYPTO_DEV_NSS_AES_MODULE)
+
+static struct platform_device aes_device = {
+	.name		= "nss-aes",
+	.id		= -1,
+};
+
+static void omap_init_aes(void)
+{
+	platform_device_register(&aes_device);
+}
+
 #else
 static inline void omap_init_aes(void) { }
+#endif
+
+#if defined(CONFIG_CRYPTO_DEV_NSS_DES) || (CONFIG_CRYPTO_DEV_NSS_DES_MODULE)
+
+static struct platform_device des_device = {
+	.name		= "nss-des",
+	.id		= -1,
+};
+
+static void omap_init_des(void)
+{
+	platform_device_register(&des_device);
+}
+
+#else
+static inline void omap_init_des(void) { }
+#endif
+
+#if defined(CONFIG_HW_RANDOM_NSS) || defined(CONFIG_HW_RANDOM_NSS_MODULE)
+
+static struct platform_device nss_rng_device = {
+	.name		= "nss_rng",
+	.id		= -1,
+};
+
+static void ti81xx_init_rng(void)
+{
+	(void) platform_device_register(&nss_rng_device);
+}
+#else
+static inline void ti81xx_init_rng(void) {}
 #endif
 
 /*-------------------------------------------------------------------------*/
@@ -3450,8 +3504,9 @@ static int __init omap2_init_devices(void)
 	omap_init_pmu();
 	omap_hdq_init();
 	omap_init_sti();
-	omap_init_sham();
 	omap_init_aes();
+  omap_init_des();
+	omap_init_sham();
 	omap_init_vout();
 #ifdef CONFIG_ARCH_TI81XX
 	if (cpu_is_ti814x()) {
@@ -3460,7 +3515,7 @@ static int __init omap2_init_devices(void)
 		if(!cpu_is_ti811x())
 			ti814x_sata_pllcfg();
 	}
-
+  ti81xx_init_rng();
 	ti81xx_ethernet_init();
 #ifndef CONFIG_MACH_UD8168_DVR
 	ti81xx_init_pcie();

@@ -126,6 +126,19 @@ config HW_RANDOM_OMAP
 
  	  If unsure, say Y.
 
+config HW_RANDOM_NSS
+	tristate "Netra Random Number Generator support"
+	depends on HW_RANDOM && ARCH_TI81XX
+	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+	  Generator hardware found on Netra multimedia processors.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called nss-rng.
+
+ 	  If unsure, say Y.
+
 config HW_RANDOM_OCTEON
 	tristate "Octeon Random Number Generator support"
 	depends on HW_RANDOM && CPU_CAVIUM_OCTEON
