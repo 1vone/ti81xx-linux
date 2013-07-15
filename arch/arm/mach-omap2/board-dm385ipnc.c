@@ -296,8 +296,8 @@ static struct snd_platform_data dm385_evm_snd_data = {
 	.serial_dir	= dm385_iis_serializer_direction,
 	.asp_chan_q	= EVENTQ_2,
 	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
+	.txnumevt	= 64,
+	.rxnumevt	= 64,
 };
 
 /* NAND flash information */
@@ -306,39 +306,67 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 	{
 		.name           = "U-Boot-min",
 		.offset         = 0,    /* Offset = 0x0 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 1 * SZ_256K,
+#else
 		.size           = SZ_128K,
+#endif
 	},
 	{
 		.name           = "U-Boot",
-		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x0 + 128K */
+		.offset         = MTDPART_OFS_APPEND,/* Offset = 0x0 + 128K */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 8 * SZ_256K,
+#else
 		.size           = 18 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "U-Boot Env",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x260000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 1 * SZ_256K,
+#else
 		.size           = 1 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "Kernel",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x280000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 17 * SZ_256K,
+#else
 		.size           = 34 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "File System",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x6C0000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 420 * SZ_256K,
+#else
 		.size           = 840 * SZ_128K,
+#endif
 	},
-	{	
+	{
 		.name           = "Data",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x55C0000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 48 * SZ_256K,
+#else
 		.size           = 96 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "File System2",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x61C0000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 212 * SZ_256K,
+#else
 		.size           = 424 * SZ_128K,
+#endif
 	},
-	{	
+	{
 		.name           = "Reserved",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0xB0C0000 */
 		.size           = MTDPART_SIZ_FULL,
@@ -383,6 +411,7 @@ static void __init dm385_evm_init_irq(void)
 static struct snd_hdmi_platform_data dm385_snd_hdmi_pdata = {
 	.dma_addr = TI81xx_HDMI_WP + HDMI_WP_AUDIO_DATA,
 	.channel = 53,
+	.dma_chan_q = EVENTQ_0,
 	.data_type = 4,
 	.acnt = 4,
 	.fifo_level = 0x20,
@@ -434,6 +463,11 @@ void __init ti813x_hdmi_clk_init(void)
 	pr_debug("{{HDMI Audio MCLK setup completed}}\n");
 }
 #endif
+static int setup_mmc2_pin_mux(void)
+{
+	return omap_mux_init_signal("spi0_cs1.gpio1_6",
+				TI814X_PIN_INPUT_PULL_UP);
+}
 #ifdef CONFIG_WL12XX_PLATFORM_DATA
 
 static struct wl12xx_platform_data wlan_data __initdata = {
@@ -548,21 +582,12 @@ static void __init dm385_evm_init(void)
 	ti814x_evm_i2c_init();
 	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
 
+	setup_mmc2_pin_mux();
 	omap2_hsmmc_init(mmc);
 
 	/* nand initialisation */
-	if (cpu_is_ti814x()) {
-		u32 *control_status = TI81XX_CTRL_REGADDR(0x40);
-		if (*control_status & (1<<16))
-			bw = 2; /*16-bit nand if BTMODE BW pin on board is ON*/
-		else
-			bw = 0; /*8-bit nand if BTMODE BW pin on board is OFF*/
-
-		board_nand_init(ti814x_nand_partitions,
-			ARRAY_SIZE(ti814x_nand_partitions), 0, bw);
-	} else
-		board_nand_init(ti814x_nand_partitions,
-		ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_BUSWIDTH_16);
+	board_nand_init(ti814x_nand_partitions,
+	ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_OMAP_BUS_16);
 
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);
