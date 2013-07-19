@@ -2448,7 +2448,11 @@ static struct resource ti814x_cpsw_resources[] = {
 };
 
 static struct platform_device ti814x_cpsw_device = {
-	.name		=	"cpsw",
+#ifdef	CONFIG_ETH_OFFLOAD_ENABLE
+    .name		=	"cpsw_offload",
+#else
+    .name		=	"cpsw",
+#endif
 	.id		=	0,
 	.num_resources	=	ARRAY_SIZE(ti814x_cpsw_resources),
 	.resource	=	ti814x_cpsw_resources,

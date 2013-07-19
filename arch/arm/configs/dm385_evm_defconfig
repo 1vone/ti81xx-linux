@@ -283,6 +283,11 @@ CONFIG_ARCH_TI81XX=y
 CONFIG_ARCH_TI814X=y
 
 #
+#TI offload driver enable
+#
+CONFIG_ETH_OFFLOAD_ENABLE=n
+
+#
 # OMAP Board Type
 #
 

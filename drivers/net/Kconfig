@@ -3441,4 +3441,12 @@ config VMXNET3
          To compile this driver as a module, choose M here: the
          module will be called vmxnet3.
 
+
+config ETH_OFFLOAD_ENABLE
+       bool "Cpsw offload ethernet driver"
+       default n
+       ---help---
+         This driver offloads ethernet TX RX to a slave processor and interacts
+         with the slave offload driver to xmit data
+
 endif # NETDEVICES
