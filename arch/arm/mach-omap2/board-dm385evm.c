@@ -771,17 +771,7 @@ static void __init dm385_evm_init(void)
 	omap2_hsmmc_init(mmc);
 
 	/* nand initialisation */
-	if (cpu_is_ti814x()) {
-		u32 *control_status = TI81XX_CTRL_REGADDR(0x40);
-		if (*control_status & (1<<16))
-			bw = 2; /*16-bit nand if BTMODE BW pin on board is ON*/
-		else
-			bw = 0; /*8-bit nand if BTMODE BW pin on board is OFF*/
-
-		board_nand_init(ti814x_nand_partitions,
-			ARRAY_SIZE(ti814x_nand_partitions), 0, bw);
-	} else
-		board_nand_init(ti814x_nand_partitions,
+	board_nand_init(ti814x_nand_partitions,
 		ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_OMAP_BUS_16);
 
 	/* initialize usb */
