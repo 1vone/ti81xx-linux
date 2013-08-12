@@ -463,11 +463,7 @@ void __init ti813x_hdmi_clk_init(void)
 	pr_debug("{{HDMI Audio MCLK setup completed}}\n");
 }
 #endif
-static int setup_mmc2_pin_mux(void)
-{
-	return omap_mux_init_signal("spi0_cs1.gpio1_6",
-				TI814X_PIN_INPUT_PULL_UP);
-}
+
 #ifdef CONFIG_WL12XX_PLATFORM_DATA
 
 static struct wl12xx_platform_data wlan_data __initdata = {
@@ -582,12 +578,11 @@ static void __init dm385_evm_init(void)
 	ti814x_evm_i2c_init();
 	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
 
-	setup_mmc2_pin_mux();
 	omap2_hsmmc_init(mmc);
 
 	/* nand initialisation */
-	board_nand_init(ti814x_nand_partitions,
-	ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_OMAP_BUS_16);
+		board_nand_init(ti814x_nand_partitions,
+			ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_OMAP_BUS_16);
 
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);

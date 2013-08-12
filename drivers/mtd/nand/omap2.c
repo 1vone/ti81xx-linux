@@ -1199,6 +1199,7 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 
 	info->nand.options	= NAND_BUSWIDTH_AUTO;
 	info->nand.options	|= NAND_SKIP_BBTSCAN;
+	info->nand.options  |= NAND_NO_SUBPAGE_WRITE;
 
 	/* NAND write protect off */
 	gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_WP, 0);
