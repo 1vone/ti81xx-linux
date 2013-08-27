@@ -206,8 +206,6 @@ static int nop_mmc_set_power(struct device *dev, int slot, int power_on,
 
 #ifndef CONFIG_ARCH_TI81XX
 static struct omap_mmc_platform_data *hsmmc_data[OMAP34XX_NR_MMC] __initdata;
-#elif	CONFIG_ARCH_TI814X
-static struct omap_mmc_platform_data *hsmmc_data[TI814X_NR_MMC] __initdata;
 #else
 static struct omap_mmc_platform_data *hsmmc_data[TI81XX_NR_MMC] __initdata;
 #endif
@@ -378,8 +376,6 @@ void __init omap2_hsmmc_init(struct omap2_hsmmc_info *controllers)
 
 	if (!cpu_is_ti81xx())
 		omap2_init_mmc(hsmmc_data, OMAP34XX_NR_MMC);
-	else if (cpu_is_ti814x())
-		omap2_init_mmc(hsmmc_data, TI814X_NR_MMC);
 	else
 		omap2_init_mmc(hsmmc_data, TI81XX_NR_MMC);
 

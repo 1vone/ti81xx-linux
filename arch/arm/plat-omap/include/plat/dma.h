@@ -185,6 +185,8 @@
 #define OMAP24XX_DMA_SPI1_TX3		52	/* E_DMA_52 */
 #define OMAP24XX_DMA_SPI1_RX3		53	/* E_DMA_53 */
 
+#define OMAP24XX_DMA_MMC1_RX		3
+#define OMAP24XX_DMA_MMC1_TX		2
 #endif
 
 #else
@@ -213,22 +215,6 @@
 #define OMAP24XX_DMA_SPI2_TX1		45	/* S_DMA_44 */
 #define OMAP24XX_DMA_SPI2_RX1		46	/* S_DMA_45 */
 #endif
-
-#ifdef CONFIG_ARCH_TI814X
-
-#define OMAP24XX_DMA_MMC1_RX		25
-#define OMAP24XX_DMA_MMC1_TX		24
-
-#define OMAP24XX_DMA_MMC2_RX		3
-#define OMAP24XX_DMA_MMC2_TX		2
-
-/* For MMC3/SD2 event mux needs to be configured in EVT_MUX_n register
-in control module. refer to TRM */
-#define OMAP24XX_DMA_MMC3_RX		1
-#define OMAP24XX_DMA_MMC3_TX		0
-
-#else
-
 #define OMAP24XX_DMA_MMC2_TX		47	/* S_DMA_46 */
 #define OMAP24XX_DMA_MMC2_RX		48	/* S_DMA_47 */
 #define OMAP24XX_DMA_UART1_TX		49	/* S_DMA_48 */
@@ -252,7 +238,6 @@ in control module. refer to TRM */
 #define OMAP34XX_DMA_DES2_TX		67	/* S_DMA_66 */
 #define OMAP34XX_DMA_DES2_RX		68	/* S_DMA_67 */
 #define OMAP34XX_DMA_SHA1MD5_RX		69	/* S_DMA_68 */
-#endif
 
 #ifdef CONFIG_ARCH_TI814X
 #define OMAP34XX_DMA_SPI4_TX0		62	/* S_DMA_62 */

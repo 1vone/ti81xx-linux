@@ -71,7 +71,7 @@ static struct omap_board_mux board_mux[] __initdata = {
 
 static struct omap2_hsmmc_info mmc[] = {
 	{
-		.mmc		= 2,
+		.mmc		= 1,
 		.caps		= MMC_CAP_4_BIT_DATA,
 		.gpio_cd        = -EINVAL, /* check setup_mmc2_pin_mux() */
 		.gpio_wp	= -EINVAL,
