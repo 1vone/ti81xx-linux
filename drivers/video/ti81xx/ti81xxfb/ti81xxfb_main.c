@@ -1275,7 +1275,7 @@ static int ti81xxfb_allocate_fbs(struct ti81xxfb_device *fbdev)
 
 		memset(vrams, 0, sizeof(vrams));
 	}
-	#ifdef CONFIG_MACH_UD8168_DVR
+	#if defined(CONFIG_MACH_UD8168_DVR) || defined(CONFIG_MACH_TI8168EVM)
 	else {	//# phoong : fixed vram size of fb (default)
 		vrams[0] = 0x7E9000;	//# 8M (1920x1080x4, 0x7E9000)
 		vrams[1] = 0x7E9000;	//# 8M (1920x1080x4, 0x7E9000)
