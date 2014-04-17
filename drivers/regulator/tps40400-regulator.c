@@ -226,7 +226,7 @@ static int __devinit tps40400_probe(struct i2c_client *i2c,
 
 	pmic->exponent = -10; /*Set this default value for TPS40400*/
 	pmic->client = i2c;
-	pmic->nominal_uV = 1000000; /* For DM8168 - nominal voltage is 1V)*/
+	pmic->nominal_uV = 1100000; /* For DM8168 - nominal voltage is 1.1V)*/
 	pmic->lastSetuV = pmic->nominal_uV; /* set initial voltage to nominal */
 
 	mutex_init(&pmic->mtx);
@@ -273,7 +273,7 @@ static int __devinit tps40400_probe(struct i2c_client *i2c,
 	ret = i2c_smbus_read_word_data(i2c, PMBUS_VOUT_SCALE_LOOP);
 	dprintk("%d:%s PMBUS_VOUT_SCALE_LOOP: 0x%x\n", __LINE__,__func__,ret);
 	/* For Nominal voltage 1.0V => 600mV/1000mV x (2^9) = 307.2 => 100110011 => b933*/
-	ret = i2c_smbus_write_word_data(i2c, PMBUS_VOUT_SCALE_LOOP, 0xb933); /* Setting it for DM8168 DVR RDK */
+	ret = i2c_smbus_write_word_data(i2c, PMBUS_VOUT_SCALE_LOOP, 0xb917); /* Setting it for DM8168 DVR RDK */
 	dprintk("%d:%s Set PMBUS_VOUT_SCALE_LOOP: 0x%x\n", __LINE__,__func__,ret);
 
 	ret = i2c_smbus_read_word_data(i2c, PMBUS_VOUT_SCALE_LOOP);
@@ -333,7 +333,8 @@ static int __devinit tps40400_probe(struct i2c_client *i2c,
 	dprintk("%d:%s VOUT_CAL_OFFSET: %d\n", __LINE__,__func__,ret);
 
 	#if 1
-	regval = 0.006348 * 32768; //# DCR is 6.348:  6.348mOhms/2^-15 = 208.011 is 0xD0
+//	regval = 0.006348 * 32768; //# DCR is 6.348:  6.348mOhms/2^-15 = 208.011 is 0xD0
+	regval = 0.009 * 32768; //# DCR is 9:  6.mOhms/2^-15
 	ret = i2c_smbus_write_word_data(i2c, PMBUS_IOUT_CAL_GAIN, regval);
 	if (ret < 0)
 		dev_err(&pmic->client->dev, "Error setting out current limit fault\n");
