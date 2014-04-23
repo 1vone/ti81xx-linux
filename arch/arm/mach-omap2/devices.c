@@ -1454,6 +1454,10 @@ static inline void ti816x_ethernet_init(void) {}
 /* smartreflex platform data */
 #define TI816X_SR_HVT_CNTRL_OFFSET	0x06AC
 #define TI816X_SR_SVT_CNTRL_OFFSET	0x06A8
+#define TI816X_SR_HVT_ERR2VOLT_GAIN	0xD
+#define TI816X_SR_SVT_ERR2VOLT_GAIN	0x12
+#define TI816X_SR_HVT_ERR_MIN_LIMIT	0xF6
+#define TI816X_SR_SVT_ERR_MIN_LIMIT	0xF8
 
 /* Refer TRM to know the Err2VoltGain factor and MinError Limits
  * for different step sizes. Update this table for both the sensors
@@ -1463,11 +1467,6 @@ static inline void ti816x_ethernet_init(void) {}
  * ti816x_sr_pdata.
  */
 #ifdef CONFIG_REGULATOR_TPS40400
-
-#define TI816X_SR_HVT_ERR2VOLT_GAIN	0x16
-#define TI816X_SR_SVT_ERR2VOLT_GAIN	0x20
-#define TI816X_SR_HVT_ERR_MIN_LIMIT	0xFA
-#define TI816X_SR_SVT_ERR_MIN_LIMIT	0xFC
 
 static struct ti816x_sr_sdata sr_sensor_data[] = {
 	{
@@ -1496,17 +1495,12 @@ static struct ti816x_sr_platform_data ti816x_sr_pdata = {
 	.irq_delay              = 200,
 	.no_of_vds              = 1,
 	.no_of_sens             = ARRAY_SIZE(sr_sensor_data),
-	.vstep_size_uv          = 8594,
+	.vstep_size_uv          = 7812,
 	.enable_on_init         = true,
 	.sr_sdata               = sr_sensor_data,
 };
 
 #else
-#define TI816X_SR_HVT_ERR2VOLT_GAIN	0xB
-#define TI816X_SR_SVT_ERR2VOLT_GAIN	0x10
-#define TI816X_SR_HVT_ERR_MIN_LIMIT	0xF4
-#define TI816X_SR_SVT_ERR_MIN_LIMIT	0xF7
-
 static struct ti816x_sr_sdata sr_sensor_data[] = {
 	{
 		.efuse_offs	= TI816X_SR_HVT_CNTRL_OFFSET,
@@ -1534,7 +1528,7 @@ static struct ti816x_sr_platform_data ti816x_sr_pdata = {
 	.irq_delay		= 2000,
 	.no_of_vds		= 1,
 	.no_of_sens		= ARRAY_SIZE(sr_sensor_data),
-	.vstep_size_uv		= 16667,
+	.vstep_size_uv		= 15000,
 	.enable_on_init		= true,
 	.sr_sdata		= sr_sensor_data,
 };

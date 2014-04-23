@@ -198,8 +198,8 @@ static struct regulator_consumer_supply ti816x_gpio_dcdc_supply[] = {
 
 static struct regulator_init_data gpio_pmic_init_data = {
 	.constraints = {
-		.min_uV		= 850000,
-		.max_uV		= 1100000,
+		.min_uV		= 800000,
+		.max_uV		= 1025000,
 		.valid_ops_mask	= (REGULATOR_CHANGE_VOLTAGE |
 			REGULATOR_CHANGE_STATUS),
 	},
@@ -209,10 +209,10 @@ static struct regulator_init_data gpio_pmic_init_data = {
 
 /* Supported voltage values for regulators */
 static struct gpio_vr_data ti816x_vsel_table[] = {
-    {0x0, 850000}, {0x8, 866667}, {0x4, 883334}, {0xC, 900001},
-    {0x2, 916668}, {0xA, 933335}, {0x6, 950002}, {0xE, 966669},
-    {0x1, 983336}, {0x9, 1000003}, {0x5, 1016670}, {0xD, 1033337},
-    {0x3, 1050004}, {0xB, 1066671}, {0x7, 1083338}, {0xF, 1100005},
+	{0x0, 800000}, {0x8, 815000}, {0x4, 830000}, {0xC, 845000},
+	{0x2, 860000}, {0xA, 875000}, {0x6, 890000}, {0xE, 905000},
+	{0x1, 920000}, {0x9, 935000}, {0x5, 950000}, {0xD, 965000},
+	{0x3, 980000}, {0xB, 995000}, {0x7, 1010000}, {0xF, 1025000},
 };
 
 static struct gpio vcore_gpios[] = {
