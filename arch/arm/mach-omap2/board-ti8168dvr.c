@@ -157,8 +157,8 @@ static struct regulator_consumer_supply ti816x_pmbus_dcdc_supply[] = {
 
 static struct regulator_init_data pmbus_pmic_init_data = {
 	.constraints = {
-		.min_uV		= 800000,
-		.max_uV		= 1050000,
+		.min_uV		= 850000,
+		.max_uV		= 1100000,
 		.always_on	= 1,
 		.valid_ops_mask	= (REGULATOR_CHANGE_VOLTAGE |
 			REGULATOR_CHANGE_STATUS),
